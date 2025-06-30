@@ -392,7 +392,7 @@ var tinyDriveLabel = new productLable({
 var diceTunnelLabel = new productLable({
   title:"Dice Tunnel Magic Trick", 
   description: "The dice number changes magically as it, passes through the tunnel. DIY assembly",
-  mainImageUrl: "https://cdn.glitch.global/7fd6a192-1c60-4d81-85d5-3cb9b8f21acc/20250418_114831.jpg?v=1745043718190",
+  mainImageUrl: "https://drive.google.com/file/d/1XKfpms6DCWsF9kwPrwki_nnEtpLW989N/view?usp=drivesdk",//"https://cdn.glitch.global/7fd6a192-1c60-4d81-85d5-3cb9b8f21acc/20250418_114831.jpg?v=1745043718190",
   smallImages: [
     "https://cdn.glitch.global/7fd6a192-1c60-4d81-85d5-3cb9b8f21acc/20250418_115057.jpg?v=1745043737781",
     "https://cdn.glitch.global/7fd6a192-1c60-4d81-85d5-3cb9b8f21acc/20250418_115120.jpg?v=1745043754567",    
@@ -402,7 +402,7 @@ var diceTunnelLabel = new productLable({
 
 var magicEmptyBoxLabel = new productLable({
   title: "Empty Box Magic Trick",
-  description: "Make objects appear and vanish, from an empty box. DIY assembly",
+  description: "Make objects appear and vanish,// from an empty box. DIY assembly",
   mainImageUrl: "photos/smarties.jpg",
   smallImages: [
     "photos/emptyOpenFront.jpg",
