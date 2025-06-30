@@ -400,6 +400,17 @@ var diceTunnelLabel = new productLable({
   ]
 });
 
+var magicEmptyBoxLabel = new productLable({
+  title: "Empty Box Magic Trick",
+  description: "Make objects appear and vanish, from an empty box. DIY assembly",
+  mainImageUrl: "photos/smarties.jpg",
+  smallImages: [
+    "photos/emptyOpenFront.jpg",
+    "photos/emptyOpenIso.jpg",
+    "photos/emptyBoxShutFront.jpg"
+  ]
+});
+
 
 var products = [
   humPullLabel,
@@ -414,7 +425,8 @@ var products = [
   zoeBirdLabel,
   fingerSwordLabel,
   tinyDriveLabel,
-  diceTunnelLabel
+  diceTunnelLabel,
+  magicEmptyBoxLabel
 ]
 
 
