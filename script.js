@@ -411,6 +411,16 @@ var magicEmptyBoxLabel = new productLable({
   ]
 });
 
+var magicFrameLabel = new productLable({
+  title: "Magic Frame Trick",
+  description: "Make words and pictures change instantly,DIY assembly",
+  mainImageUrl: "photos/YES.jpg",
+  smallImages: [
+    "photos/NO.jpg",
+    "photos/dove.jpg",
+    "photos/rabbit.jpg"
+  ]
+});
 
 var products = [
   humPullLabel,
@@ -426,7 +436,8 @@ var products = [
   fingerSwordLabel,
   tinyDriveLabel,
   diceTunnelLabel,
-  magicEmptyBoxLabel
+  magicEmptyBoxLabel,
+  magicFrameLabel
 ]
 
 
