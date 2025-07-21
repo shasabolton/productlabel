@@ -422,6 +422,17 @@ var magicFrameLabel = new productLable({
   ]
 });
 
+var lankyDoodlerLabel = new productLable({
+  title: "Lanky Doodler",
+  description: "Mechanical Writing Automaton,DIY assembly - make custom sketches in the app",
+  mainImageUrl: "photos/lankydoodler/lankyiso.jpg",
+  smallImages: [
+    "photos/lankydoodler/lankyleftiso.jpg",
+    "photos/lankydoodler/lankyleft.jpg",
+    "photos/lankydoodler/lankypaperless.jpg"
+  ]
+});
+
 var products = [
   humPullLabel,
   hummingbirdAndFlowerLabel,
@@ -437,7 +448,8 @@ var products = [
   tinyDriveLabel,
   diceTunnelLabel,
   magicEmptyBoxLabel,
-  magicFrameLabel
+  magicFrameLabel,
+  lankyDoodlerLabel
 ]
 
 
