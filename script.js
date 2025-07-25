@@ -433,6 +433,18 @@ var lankyDoodlerLabel = new productLable({
   ]
 });
 
+var tiltBoxLabel = new productLable({
+  title: "Instant Coke Magic Trick",
+  description: "Invisible objects appear instantly,when thrown into the box - DIY assembly",
+  mainImageUrl: "photos/tilt/coke.jpg",
+  smallImages: [
+    "photos/tilt/boxemptyframe.jpg",
+    "photos/tilt/apple.jpg",
+    "photos/tilt/iso.jpg"
+  ]
+});
+
+
 var products = [
   humPullLabel,
   hummingbirdAndFlowerLabel,
@@ -449,7 +461,8 @@ var products = [
   diceTunnelLabel,
   magicEmptyBoxLabel,
   magicFrameLabel,
-  lankyDoodlerLabel
+  lankyDoodlerLabel,
+  tiltBoxLabel
 ]
 
 
