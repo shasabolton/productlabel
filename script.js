@@ -1,3 +1,4 @@
+//change how small images drawn if just 2
 //Add a label type drowdown
 //render will take into account the label type. if small sticker use existing render
 //if sleave or large sticker use those render functions in the label class (yet to add)
@@ -33,6 +34,7 @@ class productLable{
     canvas.id = "canvas";
     this.ctx = canvas.getContext("2d");
     var dpi = 300;//
+    var a6 ={width:148, height:105, margin:10};//bizay.com.au
     var a4={width:297, height:210, margin:10};
     var page = a4;
     var pageWidthPx = page.width/25.4*dpi;
@@ -77,7 +79,7 @@ class productLable{
       
     
       //title
-      var titleFontHeight = height/8; 
+      var titleFontHeight = height/9; 
       ctx.fillStyle="red";
       ctx.textAlign = "center";
       ctx.font = titleFontHeight + "px Harrington";
@@ -108,7 +110,8 @@ class productLable{
      this.addImageToCanvas(ctx, labelData.mainImageUrl, imageLeft, descriptionBoxBottom, mainImageWidth, mainImageHeight);
 
     //small Images  
-    var smallImageWidth = (width - borderWidth - mainImageWidth)/3 - borderWidth;
+    var numSmallImages = labelData.smallImages.length;
+    var smallImageWidth = (width - borderWidth - mainImageWidth)/numSmallImages - borderWidth;
     var mainImageRight = x + borderWidth/2 + mainImageWidth;
     for(var i = 0; i< labelData.smallImages.length; i++){
       this.addImageToCanvas(ctx, labelData.smallImages[i],mainImageRight + borderWidth +(smallImageWidth+borderWidth)*i , descriptionBoxBottom, smallImageWidth, smallImageWidth);
@@ -116,12 +119,13 @@ class productLable{
     
     
     //logo
+    var padding = 15;
     
-    var logoUrl = "https://cdn.glitch.global/7fd6a192-1c60-4d81-85d5-3cb9b8f21acc/contraption%20cart%20logo%20text%20outlined.svg?v=1686192313474";
-    //var logoUrl = "https://lh3.googleusercontent.com/QIW9uPuJbP3e_x_0pCsTnzmeLgZkO8AoX_QCknr9f5hChiKFdsE3l_pfYjQxS2qtYe8yGmdglngDhjx9FyyoR4Fnj87yUrfvwoSXfw0rbCwB525t5qyQBujxSNQvhQEWzgnA-YBi7XjcOfhI2exWaZTfcKbMg3XMhl4FGoQS4T2nwN_cghTiLjr90iyoKNNYm6Whv7ZPEFazp6y2-rXBSuj3v1FcTBBf0Yz5J9f0nM3B8opH-leslKVz7QLNaSYCwXCRZ2Hsan-jB59NubPW8ebFJWAS0TyZKuEFVHvnsce0_XzWUARrLWCo6_Iw9g02kTqzW_XJCJxJx9P6YgnZktrI106qOUpJvmlRiYHA3E2XQJQdaEMPsHz7KVie-1krDiULBdlJ-5De3lyqvzRLxNExbzjW018aVeM7W6SCunw8UAaHw1FUh6-dNQmW6X5y6mfSpLg84oDtbxT4BfiAVhu2Ua-HJxLpYoHFjeKHRTKdIVqK_KU9ul3NpC0eDRpxF-GCYCg0QvCkmD8x2EjUUkd-OIn5wC5ABc_p31OA_eHvdGDKQnxfUzFAtVBucxailPBpM0bXL59xh2VTMmdalCwpCN3nStk95AbwGXq4ZekCYDo59JLVscAI67iAkYyNjJ8atuN7USYHk6cDTdH1vYBQn7ERVMOU2de_DDUbBs7xKMk905AUXMSMk9GNv-lM504zpcqCQofU4hTOTXPNmR1y5Vcej8Pz--rPuZ2e5T50Y7X6GDsnlafgXU6mRGZU3WMCX1XYZsG55UxVh8A4DryqbvDGObynJZBtAHFOE144mVMYoheM9KDnez62wFGogis-pkkUqpoN6Yi1-Zpn_EfbZ24wvsyP5Q55DMDT7XJQUHB9aKMKTrf3NXhoJLBneJ915y9R_Lx5XdXvx3s1jA2i0R3ntMjiH0XUj1Vjd7yE=w300-h131-s-no?authuser=0";
-    var logoTop = descriptionBoxBottom + smallImageWidth;    
+    //var logoUrl = "https://cdn.glitch.global/7fd6a192-1c60-4d81-85d5-3cb9b8f21acc/contraption%20cart%20logo%20text%20outlined.svg?v=1686192313474";
+    var logoUrl = "photos/logo/logosb.jpg";
+    var logoTop = descriptionBoxBottom + smallImageWidth +padding;    
     var logoHeight = height- (logoTop-y)-borderWidth/2;
-    this.addImageToCanvas(ctx, logoUrl, mainImageRight,  logoTop , width - borderWidth - mainImageWidth ,  logoHeight);
+    this.addImageToCanvas(ctx, logoUrl, mainImageRight+padding,  logoTop , width - borderWidth - mainImageWidth -padding*2,  logoHeight);
     
   }
   
@@ -378,6 +382,17 @@ var fingerSwordLabel = new productLable({
   ]
 });
 
+var colouredFingerSwordLabel = new productLable({
+  title: "Miracle Sword Through Finger",
+  description: "Perform a Mind-Boggling Finger Chopping Illusion",
+  mainImageUrl: "photos/colorsword/sword out.jpg",
+  smallImages: [
+    "photos/colorsword/sword n.jpg",
+    //"photos/colorsword/king up.jpg",
+    "photos/colorsword/back of card.jpg"
+  ]
+});
+
 var tinyDriveLabel = new productLable({
   title:"Tiny Drive Mini Arcade", 
   description: "Assemble the wooden kit, then steer your way through the little world ",
@@ -436,11 +451,21 @@ var lankyDoodlerLabel = new productLable({
 var tiltBoxLabel = new productLable({
   title: "Instant Coke Magic Trick",
   description: "Invisible objects appear instantly,when thrown into the box - DIY assembly",
-  mainImageUrl: "photos/tilt/coke.jpg",
+  mainImageUrl: "photos/tilt/noToCoke.jpg",
   smallImages: [
-    "photos/tilt/boxemptyframe.jpg",
+    "photos/tilt/canAppears.png",
     "photos/tilt/apple.jpg",
     "photos/tilt/iso.jpg"
+  ]
+});
+
+var adderLabel = new productLable({
+  title: "Wooden Calculator",
+  description: "A Functioning Mechanical Calculator,Made With Wooden Gears - DIY Assembly",
+  mainImageUrl: "photos/adder/adderhandangle.jpg",
+  smallImages: [
+    "photos/adder/adderback.jpg",
+    "photos/adder/adderiso.jpg"
   ]
 });
 
@@ -462,7 +487,9 @@ var products = [
   magicEmptyBoxLabel,
   magicFrameLabel,
   lankyDoodlerLabel,
-  tiltBoxLabel
+  tiltBoxLabel,
+  colouredFingerSwordLabel,
+  adderLabel
 ]
 
 
