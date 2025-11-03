@@ -370,6 +370,15 @@ var zoeBirdLabel = new productLable({
   ]
 });
 
+var fillSwordLabel = new productLable({
+  title: "Magic Sword Through Finger",
+  description: "Assemble the wooden kit, then perform your magic finger chopping illusion",
+  mainImageUrl: "photos/fillsword/out.jpg",
+  smallImages: [
+    "photos/fillsword/in.jpg",
+    "photos/fillsword/back.jpg"
+  ]
+});
 
 var fingerSwordLabel = new productLable({
   title:"Magic Sword Through Finger", 
@@ -481,6 +490,7 @@ var products = [
   flutteringHeartLabel,
   humPoleLabel,
   zoeBirdLabel,
+  fillSwordLabel,
   fingerSwordLabel,
   tinyDriveLabel,
   diceTunnelLabel,
