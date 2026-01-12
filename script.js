@@ -21,7 +21,6 @@
   document.body.classList.add("fonts-loaded");
 }*/
 
-
 var activeLabel;
 
 class productLable{

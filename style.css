@@ -1,7 +1,6 @@
 @font-face {
   font-family: 'Harrington'; /* This is an arbitrary name -- whatever works for you */
-  src: url('https://cdn.glitch.global/7fd6a192-1c60-4d81-85d5-3cb9b8f21acc/HARRINGT.TTF?v=1716508102300');
-       url('https://cdn.glitch.global/7fd6a192-1c60-4d81-85d5-3cb9b8f21acc/HARRINGT.TTF?v=1716508102300') format('ttf');
+  src: url('HARRINGT.TTF') format('truetype');    
 }
 
 
