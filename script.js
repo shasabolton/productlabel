@@ -279,6 +279,16 @@ var hummingbirdAndFlowerLabel = new productLable({
   ]
 });
 
+var hummf4mmLabel = new productLable({
+  title:"Hummingbird and FLower", 
+  description: "Assemble the Mechanism,Hand Cranked - Elegant Lifelike Motion",
+  mainImageUrl: "photos/humf4/humf4InWingsForward.jpg",
+  smallImages: [
+    "photos/humf4/humf4OutWingsBack.jpg",
+    "photos/humf4/humf4Parts.jpg"
+    ]
+});
+
 var electricHummingbirdLabel = new productLable({
   title:"Electrigami Hummingbird", 
   description: "Assemble the Mechanism, powered with static electricity",
@@ -481,6 +491,7 @@ var adderLabel = new productLable({
 var products = [
   humPullLabel,
   hummingbirdAndFlowerLabel,
+  hummf4mmLabel,
   fantailLabel,
   IllusionistBoxLabel,
   DogCatRunningLabel,
