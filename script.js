@@ -131,29 +131,49 @@ class productLable{
   
   
  addImageToCanvas(ctx, url, x, y, width, height){
-     var image = document.createElement("img");
-     image.src = url;
-     image.crossOrigin = "anonymous";
-     image.addEventListener("load", (e) => { 
-       //image.crossorigin='anonymous';
-       console.log("crossorigin",image.crossOrigin);
-       //check fits in boudary
-       if(width*image.height/image.width>height){//too high if keeping width
-         var scale = height/image.height;//must keep height instead
-         var newWidth = scale*image.width;
-         x += (width - newWidth)/2;//center
-         width = newWidth;
-         
-       }
-       else if(height*image.width/image.height>width){//too wide if keeping height
-         var scale = width/image.width;
-         var newHeight = scale*image.height; 
-         y += (height - newHeight)/2;
-         height = newHeight;
-       }
-       
-       ctx.drawImage(image, x , y, width , height );
-     });
+    var image = document.createElement("img");
+    
+    const isExternalUrl = url.startsWith('http://') || url.startsWith('https://');
+    
+    if (isExternalUrl) {
+        // Use images.weserv.nl - it's an image proxy/CDN that often bypasses blocks
+        image.src = `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
+    } else {
+        image.src = url;
+    }
+    
+    image.crossOrigin = "anonymous";
+    
+    image.addEventListener("error", function onError(e) {
+        if (isExternalUrl) {
+            console.log("Image proxy failed, trying direct URL (will fail CORS but shows attempt)...");
+            image.removeEventListener("error", onError);
+            // Last resort - direct URL (will fail CORS but at least we tried)
+            image.src = url;
+        } else {
+            console.error("Failed to load image:", url);
+        }
+    });
+    
+    image.addEventListener("load", (e) => { 
+      console.log("crossorigin",image.crossOrigin);
+      //check fits in boudary
+      if(width*image.height/image.width>height){//too high if keeping width
+        var scale = height/image.height;//must keep height instead
+        var newWidth = scale*image.width;
+        x += (width - newWidth)/2;//center
+        width = newWidth;
+        
+      }
+      else if(height*image.width/image.height>width){//too wide if keeping height
+        var scale = width/image.width;
+        var newHeight = scale*image.height; 
+        y += (height - newHeight)/2;
+        height = newHeight;
+      }
+      
+      ctx.drawImage(image, x , y, width , height );
+    });
   }
   
   
@@ -487,6 +507,16 @@ var adderLabel = new productLable({
   ]
 });
 
+var ChickenAndEggLabel = new productLable({
+  title: "Chicken and Egg Magic Trick",
+  description: "“Impossible boxes: each fits, inside the other.” - DIY Assembly",
+  mainImageUrl: "https://i.etsystatic.com/25031074/r/il/2f7da6/7693611964/il_fullxfull.7693611964_frf6.jpg",
+  smallImages: [
+    "https://i.etsystatic.com/25031074/r/il/085681/7741591041/il_fullxfull.7741591041_fzzl.jpg",
+    "https://i.etsystatic.com/25031074/r/il/f19181/7741597269/il_fullxfull.7741597269_hqb9.jpg"
+  ]
+});
+
 
 var products = [
   humPullLabel,
@@ -509,7 +539,8 @@ var products = [
   lankyDoodlerLabel,
   tiltBoxLabel,
   colouredFingerSwordLabel,
-  adderLabel
+  adderLabel,
+  ChickenAndEggLabel
 ]
 
 
