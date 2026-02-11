@@ -507,6 +507,16 @@ var adderLabel = new productLable({
   ]
 });
 
+var cryptexLabel = new productLable({
+  title: "Mini Cryptex",
+  description: "Spin - Spell - Solve - unlock with words,Puzzle Box - DIY Assembly Kit",
+  mainImageUrl: "photos/cyptex/iso BAG open.jpg",
+  smallImages: [
+    "photos/cyptex/close iso drawer out.jpg",
+    "photos/cyptex/in hand.jpg"
+  ]
+});
+
 var ChickenAndEggLabel = new productLable({
   title: "Chicken and Egg Magic Trick",
   description: "“Impossible boxes: each fits, inside the other.” - DIY Assembly",
@@ -540,7 +550,8 @@ var products = [
   tiltBoxLabel,
   colouredFingerSwordLabel,
   adderLabel,
-  ChickenAndEggLabel
+  ChickenAndEggLabel,
+  cryptexLabel
 ]
 
 
