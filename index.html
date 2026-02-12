@@ -15,7 +15,7 @@
       Like the title, which appears on the browser tab but not inside the page
       Further down you'll see the content that displays in the page
     -->
-    <title>Hello World!</title>
+    <title>Product Label</title>
 
     <!-- The website stylesheet -->
     <link rel="stylesheet" href="style.css" />
@@ -25,18 +25,20 @@
     <script src="script.js" defer></script>
   </head>
   <body>
-    <select id = "productSelect">
-      
-    </select>
-    <button onclick = "print()" style = "display:inline_block">
-      print
-    </button>
-    
-    <button onclick = "tileFour()" style = "display:inline_block">
-      tile four
-    </button>
-    
-   <a id="downloadLink" download="YourFileName.jpg">Download as image</a>
+    <header class="toolbar">
+      <div class="toolbar-group">
+        <label for="productSelect">Product:</label>
+        <select id="productSelect"></select>
+      </div>
+      <div class="toolbar-actions">
+        <button id="printBtn" type="button">Print</button>
+        <button onclick="tileFour()" type="button">Tile Four</button>
+        <a id="downloadLink" download="label.jpg" class="btn-link">Download</a>
+      </div>
+    </header>
+    <main class="canvas-container">
+      <!-- Canvas is inserted here by script -->
+    </main>
   <!--   <div id = "a4Page">
       <div class = "quarter">
         <div id = "border">

@@ -44,7 +44,9 @@ class productLable{
     this.labelWidth = pageWidthPx/2 - this.marginPx*2;
     this.labelHeight = pageHeightPx/2 - this.marginPx*2;
     this.borderWidth = this.labelHeight/50;
-    document.body.append(canvas);
+    var container = document.querySelector('.canvas-container');
+    if (container) container.appendChild(canvas);
+    else document.body.append(canvas);
     
    
    /* this.ctx.beginPath();
@@ -217,23 +219,25 @@ class productLable{
 
 
 
-function print()  
-{  
-    var dataUrl = document.getElementById('canvas').toDataURL(); //attempt to save base64 string to server using this var  
-    var windowContent = '<!DOCTYPE html>';
-    windowContent += '<html>'
-    windowContent += '<head><title>Print canvas</title></head>';
-    windowContent += '<body>'
-    windowContent += '<img src="' + dataUrl + '">';
-    windowContent += '</body>';
-    windowContent += '</html>';
-    var printWin = window.open('','','width=340,height=260');
-    printWin.document.open();
+function printCanvas() {
+    var canvas = document.getElementById('canvas');
+    if (!canvas) return;
+    var dataUrl = canvas.toDataURL('image/png');
+    var printWin = window.open('', '_blank');
+    if (!printWin) {
+        alert('Please allow popups to print.');
+        return;
+    }
+    var windowContent = '<!DOCTYPE html><html><head><title>Print Label</title><style>';
+    windowContent += '@page { size: A4; margin: 0; }';
+    windowContent += 'body { margin: 0; padding: 0; }';
+    windowContent += 'img { width: 100%; height: auto; display: block; }';
+    windowContent += '</style></head><body>';
+    windowContent += '<img src="' + dataUrl + '" alt="Product Label" onload="window.print(); window.close();">';
+    windowContent += '</body></html>';
     printWin.document.write(windowContent);
     printWin.document.close();
     printWin.focus();
-    printWin.print();
-    printWin.close();
 }
 
 function tileFour(){
@@ -246,6 +250,7 @@ function download() {
     this.href = dt;
 };
 document.getElementById("downloadLink").addEventListener('click', download, false);
+document.getElementById("printBtn").addEventListener('click', printCanvas, false);
 
 var productSelect = document.getElementById("productSelect");
 
