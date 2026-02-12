@@ -527,6 +527,16 @@ var ChickenAndEggLabel = new productLable({
   ]
 });
 
+var magicDrawerLabel = new productLable({
+  title: "Magic Drawer Trick",
+  description: "Make objects vanish or appear at will,DIY Assembly",
+  mainImageUrl: "photos/magicdrawer/silkAndEgg.webp",
+  smallImages: [
+    "photos/magicdrawer/closedLeftIso.webp",
+    "photos/magicdrawer/openEmptyLeftIso.webp",
+    "photos/magicdrawer/openWithHand.webp"
+  ]
+});
 
 var products = [
   humPullLabel,
@@ -551,7 +561,8 @@ var products = [
   colouredFingerSwordLabel,
   adderLabel,
   ChickenAndEggLabel,
-  cryptexLabel
+  cryptexLabel,
+  magicDrawerLabel
 ]
 
 
