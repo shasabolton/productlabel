@@ -564,8 +564,8 @@ var adderLabel = new productLable({
   description: "A Functioning Mechanical Calculator,Made With Wooden Gears - DIY Assembly",
   mainImageUrl: "photos/adder/adderhandangle.jpg",
   smallImages: [
-    "photos/adder/adderback.jpg",
-    "photos/adder/adderiso.jpg"
+    "photos/adder/adderbackFaintBG.jpg",
+    "photos/adder/adderisoFaintBG.jpg"
   ]
 });
 
