@@ -23,49 +23,59 @@
 
 var activeLabel;
 
+// Page sizes in mm (width x height, landscape)
+var pages = {
+  A2: { width: 594, height: 420, margin: 10 },
+  A3: { width: 420, height: 297, margin: 10 },
+  A4: { width: 297, height: 210, margin: 10 },
+  A5: { width: 210, height: 148, margin: 10 }
+};
+
 class productLable{
   constructor(data){   
     this.labelData = data;
   }
   
   render(){
+    var pageKey = document.getElementById("pageSizeSelect").value;
+    var tileNumber = parseInt(document.getElementById("tileSelect").value, 10);
     var canvas = document.createElement("canvas");
     canvas.id = "canvas";
     this.ctx = canvas.getContext("2d");
-    var dpi = 300;//
-    var a6 ={width:148, height:105, margin:10};//bizay.com.au
-    var a4={width:297, height:210, margin:10};
-    var page = a4;
+    var dpi = 300;
+    var page = pages[pageKey];
     var pageWidthPx = page.width/25.4*dpi;
-    var pageHeightPx =page.height/25.4*dpi;
+    var pageHeightPx = page.height/25.4*dpi;
     canvas.width = pageWidthPx;
     canvas.height = pageHeightPx;
     this.marginPx = page.margin/25.4*dpi;
-    this.labelWidth = pageWidthPx/2 - this.marginPx*2;
-    this.labelHeight = pageHeightPx/2 - this.marginPx*2;
-    this.borderWidth = this.labelHeight/50;
+    this.borderWidth = 0; // set in tile()
     var container = document.querySelector('.canvas-container');
     if (container) container.appendChild(canvas);
     else document.body.append(canvas);
-    
-   
-   /* this.ctx.beginPath();
-    this.ctx.rect(0,0, canvas.width, canvas.height);
-    this.ctx.fillStyle = "green";
-    this.ctx.fill();*/
-    
-    this.drawLabel(this.labelData, this.ctx,this.borderWidth/2,this.borderWidth/2,this.labelWidth,this.labelHeight);
-    //this.drawLabel(this.labelData, this.ctx,this.borderWidth/2,this.borderWidth/2+this.marginPx +this.labelHeight,this.labelWidth,this.labelHeight);
-    //this.drawLabel(this.labelData, this.ctx,this.borderWidth/2+this.marginPx + this.labelWidth,this.borderWidth/2,this.labelWidth,this.labelHeight);
-    //this.drawLabel(this.labelData, this.ctx,this.borderWidth/2+this.marginPx + this.labelWidth,this.borderWidth/2+this.marginPx +this.labelHeight,this.labelWidth,this.labelHeight);
-    //this.tileFour(this.ctx,this.marginPx,this.marginPx,this.labelWidth,this.labelHeight, this.marginPx);
-    
-    
-    
-    
+
+    this.tile(tileNumber);
   }
   
-  drawLabel(labelData, ctx,x,y, width, height){
+  drawLabelRotated(labelData, ctx, x, y, cellW, cellH){
+    // Draw to offscreen canvas so async images get correct rotation when drawn
+    var offscreen = document.createElement("canvas");
+    offscreen.width = cellH;
+    offscreen.height = cellW;
+    var offCtx = offscreen.getContext("2d");
+    var redrawToMain = function() {
+      ctx.save();
+      ctx.translate(x + cellW / 2, y + cellH / 2);
+      ctx.rotate(Math.PI / 2);
+      ctx.translate(-cellH / 2, -cellW / 2);
+      ctx.drawImage(offscreen, 0, 0);
+      ctx.restore();
+    };
+    this.drawLabel(labelData, offCtx, 0, 0, cellH, cellW, redrawToMain);
+    redrawToMain();
+  }
+
+  drawLabel(labelData, ctx, x, y, width, height, onAfterImageDraw){
     
       //border
       ctx.beginPath();
@@ -108,14 +118,14 @@ class productLable{
      var mainImageHeight = y+height - descriptionBoxBottom - borderWidth/2;
      var mainImageWidth = mainImageHeight;
      var imageLeft = x + borderWidth/2;
-     this.addImageToCanvas(ctx, labelData.mainImageUrl, imageLeft, descriptionBoxBottom, mainImageWidth, mainImageHeight);
+     this.addImageToCanvas(ctx, labelData.mainImageUrl, imageLeft, descriptionBoxBottom, mainImageWidth, mainImageHeight, onAfterImageDraw);
 
     //small Images  
     var numSmallImages = labelData.smallImages.length;
     var smallImageWidth = (width - borderWidth - mainImageWidth)/numSmallImages - borderWidth;
     var mainImageRight = x + borderWidth/2 + mainImageWidth;
     for(var i = 0; i< labelData.smallImages.length; i++){
-      this.addImageToCanvas(ctx, labelData.smallImages[i],mainImageRight + borderWidth +(smallImageWidth+borderWidth)*i , descriptionBoxBottom, smallImageWidth, smallImageWidth);
+      this.addImageToCanvas(ctx, labelData.smallImages[i],mainImageRight + borderWidth +(smallImageWidth+borderWidth)*i , descriptionBoxBottom, smallImageWidth, smallImageWidth, onAfterImageDraw);
     }
     
     
@@ -126,13 +136,13 @@ class productLable{
     var logoUrl = "photos/logo/logosb.jpg";
     var logoTop = descriptionBoxBottom + smallImageWidth +padding;    
     var logoHeight = height- (logoTop-y)-borderWidth/2;
-    this.addImageToCanvas(ctx, logoUrl, mainImageRight+padding,  logoTop , width - borderWidth - mainImageWidth -padding*2,  logoHeight);
+    this.addImageToCanvas(ctx, logoUrl, mainImageRight+padding,  logoTop , width - borderWidth - mainImageWidth -padding*2,  logoHeight, onAfterImageDraw);
     
   }
   
   
   
- addImageToCanvas(ctx, url, x, y, width, height){
+ addImageToCanvas(ctx, url, x, y, width, height, onAfterDraw){
     var image = document.createElement("img");
     
     const isExternalUrl = url.startsWith('http://') || url.startsWith('https://');
@@ -175,38 +185,71 @@ class productLable{
       }
       
       ctx.drawImage(image, x , y, width , height );
+      if (onAfterDraw) onAfterDraw();
     });
   }
   
   
-  tileFour(){
-    var ctx = this.ctx;
-    var x = 0;//this.marginPx;
-    var y = 0;//this.marginPx;
-    var w = this.labelWidth + this.borderWidth;
-    var h = this.labelHeight + this.borderWidth;
-    var margin = this.marginPx
-    const imageData = ctx.getImageData(x,y,w,h);
-    
+  tile(n){
     var canvas = document.getElementById("canvas");
-    
-    //crop canvas so blank edges are not included
-    canvas.width = x+(w+margin)*2;
-    canvas.height = y+(h+margin)*2;
-    
-    //fill blank area white
+    var pageWidthPx = canvas.width;
+    var pageHeightPx = canvas.height;
+    var margin = this.marginPx;
+    var gap = margin * 2;  // margin between tiles = 2x edge margin (cut gives even margin)
+
+    // Find best layout: try each factor pair and both orientations (normal + rotated 90°)
+    var best = { cols: 1, rows: 1, labelW: 0, labelH: 0, area: 0, rotated: false };
+    for (var cols = 1; cols <= n; cols++) {
+      if (n % cols !== 0) continue;
+      var rows = n / cols;
+      // Normal: cols along page width, rows along page height
+      var labelW = (pageWidthPx - 2 * margin - (cols - 1) * gap) / cols;
+      var labelH = (pageHeightPx - 2 * margin - (rows - 1) * gap) / rows;
+      if (labelW > 0 && labelH > 0) {
+        var area = labelW * labelH;
+        if (area > best.area) {
+          best = { cols: cols, rows: rows, labelW: labelW, labelH: labelH, area: area, rotated: false };
+        }
+      }
+      // Rotated 90°: cols along page height, rows along page width
+      var labelWR = (pageHeightPx - 2 * margin - (cols - 1) * gap) / cols;
+      var labelHR = (pageWidthPx - 2 * margin - (rows - 1) * gap) / rows;
+      if (labelWR > 0 && labelHR > 0) {
+        var areaR = labelWR * labelHR;
+        if (areaR > best.area) {
+          best = { cols: cols, rows: rows, labelW: labelWR, labelH: labelHR, area: areaR, rotated: true };
+        }
+      }
+    }
+
+    this.labelWidth = best.labelW;
+    this.labelHeight = best.labelH;
+    this.borderWidth = this.labelHeight / 50;
+
+    // Fill canvas white
     this.ctx.beginPath();
-    this.ctx.rect(0,0, x+(w+margin)*2,  y+(h+margin)*2);
+    this.ctx.rect(0, 0, canvas.width, canvas.height);
     this.ctx.fillStyle = "white";
     this.ctx.fill();
-    
-  
-    
-    ctx.putImageData(imageData, x, y);
-    ctx.putImageData(imageData, x+w+margin*2, y);
-    ctx.putImageData(imageData, x, y+h+2*margin);
-    ctx.putImageData(imageData, x+w+margin*2, y+h+2*margin);
-    
+
+    // Draw n labels in grid (gap between tiles = 2*margin)
+    for (var i = 0; i < n; i++) {
+      var col = i % best.cols;
+      var row = Math.floor(i / best.cols);
+      var x, y, w, h;
+      if (best.rotated) {
+        // Grid: cols along page height, rows along page width
+        x = margin + row * (best.labelH + gap);
+        y = margin + col * (best.labelW + gap);
+        w = best.labelH;
+        h = best.labelW;
+        this.drawLabelRotated(this.labelData, this.ctx, x, y, w, h);
+      } else {
+        x = margin + col * (best.labelW + gap);
+        y = margin + row * (best.labelH + gap);
+        this.drawLabel(this.labelData, this.ctx, x, y, best.labelW, best.labelH);
+      }
+    }
   }
   
 }
@@ -228,8 +271,9 @@ function printCanvas() {
         alert('Please allow popups to print.');
         return;
     }
+    var pageSize = document.getElementById("pageSizeSelect").value;
     var windowContent = '<!DOCTYPE html><html><head><title>Print Label</title><style>';
-    windowContent += '@page { size: A4; margin: 0; }';
+    windowContent += '@page { size: ' + pageSize + '; margin: 0; }';
     windowContent += 'body { margin: 0; padding: 0; }';
     windowContent += 'img { width: 100%; height: auto; display: block; }';
     windowContent += '</style></head><body>';
@@ -240,8 +284,11 @@ function printCanvas() {
     printWin.focus();
 }
 
-function tileFour(){
-  activeLabel.tileFour();
+function applyTile(){
+  if (activeLabel) {
+    var n = parseInt(document.getElementById("tileSelect").value, 10);
+    activeLabel.tile(n);
+  }
 }
 
 
@@ -258,6 +305,16 @@ var productSelect = document.getElementById("productSelect");
 productSelect.onchange = function(){
   setActiveProduct(productSelect.selectedIndex);
 }
+
+document.getElementById("pageSizeSelect").onchange = function(){
+  if (activeLabel) setActiveProduct(productSelect.selectedIndex);
+};
+
+document.getElementById("tileSelect").onchange = function(){
+  if (activeLabel) setActiveProduct(productSelect.selectedIndex);
+};
+
+document.getElementById("tileBtn").addEventListener("click", applyTile, false);
 
 
 

@@ -30,9 +30,28 @@
         <label for="productSelect">Product:</label>
         <select id="productSelect"></select>
       </div>
+      <div class="toolbar-group">
+        <label for="pageSizeSelect">Page:</label>
+        <select id="pageSizeSelect">
+          <option value="A2">A2</option>
+          <option value="A3">A3</option>
+          <option value="A4" selected>A4</option>
+          <option value="A5">A5</option>
+        </select>
+      </div>
+      <div class="toolbar-group">
+        <label for="tileSelect">Tile:</label>
+        <select id="tileSelect">
+          <option value="1" selected>1</option>
+          <option value="2">2</option>
+          <option value="4">4</option>
+          <option value="6">6</option>
+          <option value="8">8</option>
+        </select>
+      </div>
       <div class="toolbar-actions">
         <button id="printBtn" type="button">Print</button>
-        <button onclick="tileFour()" type="button">Tile Four</button>
+        <button id="tileBtn" type="button">Tile</button>
         <a id="downloadLink" download="label.jpg" class="btn-link">Download</a>
       </div>
     </header>
