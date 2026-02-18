@@ -19,13 +19,20 @@
 
     <!-- The website stylesheet -->
     <link rel="stylesheet" href="style.css" />
-     
-    
+    <!-- Product data source - referenced by script.js -->
+    <link id="productDataSrc" href="productData.json" />
+    <!-- Template classes (must load before script.js) -->
+    <script src="productLabel.js" defer></script>
+    <script src="bellyBand.js" defer></script>
     <!-- The website JavaScript file -->
     <script src="script.js" defer></script>
   </head>
   <body>
     <header class="toolbar">
+      <div class="toolbar-group">
+        <label for="templateSelect">Template:</label>
+        <select id="templateSelect"></select>
+      </div>
       <div class="toolbar-group">
         <label for="productSelect">Product:</label>
         <select id="productSelect"></select>
