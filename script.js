@@ -2,12 +2,16 @@ var activeLabel;
 var themes = [];
 var selectedTheme = null;
 
-// Page sizes in mm (width x height, landscape)
+// Page sizes in mm (width x height)
 var pages = {
-  A2: { width: 594, height: 420, margin: 10 },
-  A3: { width: 420, height: 297, margin: 10 },
-  A4: { width: 297, height: 210, margin: 10 },
-  A5: { width: 210, height: 148, margin: 10 }
+  "A2 Portrait": { width: 420, height: 594, margin: 10, printSize: "A2 portrait" },
+  "A2 Landscape": { width: 594, height: 420, margin: 10, printSize: "A2 landscape" },
+  "A3 Portrait": { width: 297, height: 420, margin: 10, printSize: "A3 portrait" },
+  "A3 Landscape": { width: 420, height: 297, margin: 10, printSize: "A3 landscape" },
+  "A4 Portrait": { width: 210, height: 297, margin: 10, printSize: "A4 portrait" },
+  "A4 Landscape": { width: 297, height: 210, margin: 10, printSize: "A4 landscape" },
+  "A5 Portrait": { width: 148, height: 210, margin: 10, printSize: "A5 portrait" },
+  "A5 Landscape": { width: 210, height: 148, margin: 10, printSize: "A5 landscape" }
 };
 
 // Template classes - each has constructor(data) and render()
@@ -28,9 +32,11 @@ function printCanvas() {
         alert('Please allow popups to print.');
         return;
     }
-    var pageSize = document.getElementById("pageSizeSelect").value;
+    var pageKey = document.getElementById("pageSizeSelect").value;
+    var page = pages[pageKey];
+    var printSize = page && page.printSize ? page.printSize : pageKey;
     var windowContent = '<!DOCTYPE html><html><head><title>Print Label</title><style>';
-    windowContent += '@page { size: ' + pageSize + '; margin: 0; }';
+    windowContent += '@page { size: ' + printSize + '; margin: 0; }';
     windowContent += 'body { margin: 0; padding: 0; }';
     windowContent += 'img { width: 100%; height: auto; display: block; }';
     windowContent += '</style></head><body>';
@@ -40,14 +46,6 @@ function printCanvas() {
     printWin.document.close();
     printWin.focus();
 }
-
-function applyTile(){
-  if (activeLabel) {
-    var n = parseInt(document.getElementById("tileSelect").value, 10);
-    activeLabel.tile(n);
-  }
-}
-
 
 function download() {
     var dt = document.getElementById("canvas").toDataURL('image/jpeg');
@@ -91,10 +89,6 @@ document.getElementById("pageSizeSelect").onchange = function(){
 document.getElementById("tileSelect").onchange = function(){
   if (activeLabel) setActiveProduct(productSelect.selectedIndex);
 };
-
-document.getElementById("tileBtn").addEventListener("click", applyTile, false);
-
-
 
 function setActiveProduct(index){
   activeLabel = products[index];
