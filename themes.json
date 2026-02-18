@@ -1,0 +1,36 @@
+{
+  "themes": [
+    {
+      "id": "current",
+      "name": "Current (Product Label)",
+      "headings": "Harrington",
+      "headingsWeight": "400",
+      "body": "Arial",
+      "description": "Original product label styling"
+    },
+    {
+      "id": "modern",
+      "name": "Clean & Modern",
+      "headings": "Montserrat",
+      "headingsWeight": "600",
+      "body": "Source Sans Pro",
+      "description": "Clean, modern, museum-friendly"
+    },
+    {
+      "id": "mechanical",
+      "name": "Mechanical / Instrument",
+      "headings": "Bahnschrift",
+      "headingsWeight": "600",
+      "body": "EB Garamond",
+      "description": "Feels like technical equipment"
+    },
+    {
+      "id": "elegant",
+      "name": "Elegant Engineering",
+      "headings": "IBM Plex Sans",
+      "headingsWeight": "600",
+      "body": "IBM Plex Serif",
+      "description": "Very appropriate for computing history"
+    }
+  ]
+}

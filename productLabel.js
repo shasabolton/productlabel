@@ -56,11 +56,12 @@ class productLable{
       ctx.stroke();
       
     
-      //title
+      //title - use selected theme
+      var th = selectedTheme || { headings: "Harrington", headingsWeight: "400", body: "Arial" };
       var titleFontHeight = height/9; 
       ctx.fillStyle="red";
       ctx.textAlign = "center";
-      ctx.font = titleFontHeight + "px Harrington";
+      ctx.font = th.headingsWeight + " " + titleFontHeight + "px " + th.headings;
       ctx.fillText(labelData.title, x+width/2, y+ titleFontHeight);  
     
      //description background
@@ -70,10 +71,10 @@ class productLable{
       ctx.fillRect(x,y+ titleFontHeight*1.3, width,descriptionArray.length*descriptionFontHeight+descriptionFontHeight*0.3);
       var descriptionBoxBottom = y+ titleFontHeight*1.3 + descriptionArray.length*descriptionFontHeight+descriptionFontHeight*0.3;
       
-      //description
+      //description - use selected theme
       ctx.fillStyle="white";
       ctx.textAlign = "center";
-      ctx.font = descriptionFontHeight + "px Arial";
+      ctx.font = descriptionFontHeight + "px " + th.body;
       
       var textY = y+ titleFontHeight*1.3 + descriptionFontHeight ;
       for(var row = 0; row<descriptionArray.length; row++){

@@ -1,5 +1,6 @@
-﻿
 var activeLabel;
+var themes = [];
+var selectedTheme = null;
 
 // Page sizes in mm (width x height, landscape)
 var pages = {
@@ -57,7 +58,13 @@ document.getElementById("printBtn").addEventListener('click', printCanvas, false
 
 var productSelect = document.getElementById("productSelect");
 var templateSelect = document.getElementById("templateSelect");
+var themeSelect = document.getElementById("themeSelect");
 var products = [];
+
+function getSelectedTheme() {
+  var idx = themeSelect.selectedIndex;
+  return themes[idx] || themes[0];
+}
 
 function getSelectedTemplateClass() {
   var idx = templateSelect.selectedIndex;
@@ -70,6 +77,11 @@ productSelect.onchange = function(){
 
 templateSelect.onchange = function(){
   if (products.length > 0) rebuildProductsWithTemplate();
+};
+
+themeSelect.onchange = function(){
+  selectedTheme = getSelectedTheme();
+  if (activeLabel) setActiveProduct(productSelect.selectedIndex);
 };
 
 document.getElementById("pageSizeSelect").onchange = function(){
@@ -100,8 +112,23 @@ function rebuildProductsWithTemplate() {
 
 function initFromProductData(){
   var srcEl = document.getElementById("productDataSrc");
-  var url = srcEl ? (srcEl.href || srcEl.getAttribute("href") || "productData.json") : "productData.json";
-  fetch(url)
+  var themesEl = document.getElementById("themesSrc");
+  var productUrl = srcEl ? (srcEl.href || srcEl.getAttribute("href") || "productData.json") : "productData.json";
+  var themesUrl = themesEl ? (themesEl.href || themesEl.getAttribute("href") || "themes.json") : "themes.json";
+  fetch(themesUrl)
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      themes = data.themes || data;
+      themeSelect.innerHTML = "";
+      for (var t = 0; t < themes.length; t++) {
+        var opt = document.createElement("option");
+        opt.text = themes[t].name;
+        opt.value = t;
+        themeSelect.add(opt);
+      }
+      selectedTheme = getSelectedTheme();
+      return fetch(productUrl);
+    })
     .then(function(res){ return res.json(); })
     .then(function(data){
       var items = data.products || data;
@@ -116,7 +143,7 @@ function initFromProductData(){
       }
       if (products.length > 0) setActiveProduct(0);
     })
-    .catch(function(err){ console.error("Failed to load product data:", err); });
+    .catch(function(err){ console.error("Failed to load data:", err); });
 }
 
 // Populate template dropdown (before init so getSelectedTemplateClass works)

@@ -19,8 +19,13 @@
 
     <!-- The website stylesheet -->
     <link rel="stylesheet" href="style.css" />
-    <!-- Product data source - referenced by script.js -->
+    <!-- Google Fonts for themes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@600&family=IBM+Plex+Serif&family=Montserrat:wght@600&family=Source+Sans+Pro&family=EB+Garamond&display=swap" rel="stylesheet" />
+    <!-- Data sources - referenced by script.js -->
     <link id="productDataSrc" href="productData.json" />
+    <link id="themesSrc" href="themes.json" />
     <!-- Template classes (must load before script.js) -->
     <script src="productLabel.js" defer></script>
     <script src="bellyBand.js" defer></script>
@@ -29,6 +34,10 @@
   </head>
   <body>
     <header class="toolbar">
+      <div class="toolbar-group">
+        <label for="themeSelect">Theme:</label>
+        <select id="themeSelect"></select>
+      </div>
       <div class="toolbar-group">
         <label for="templateSelect">Template:</label>
         <select id="templateSelect"></select>
