@@ -26,6 +26,9 @@
     <!-- Data sources - referenced by script.js -->
     <link id="productDataSrc" href="productData.json" />
     <link id="themesSrc" href="themes.json" />
+    <!-- html2canvas and jsPDF for div export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Template classes (must load before script.js) -->
     <script src="productLabel.js" defer></script>
     <script src="bellyBand.js" defer></script>
@@ -71,7 +74,9 @@
       </div>
       <div class="toolbar-actions">
         <button id="printBtn" type="button">Print</button>
-        <a id="downloadLink" download="label.jpg" class="btn-link">Download</a>
+        <a id="downloadPng" href="#" download="label.png" class="btn-link">Download PNG</a>
+        <a id="downloadJpeg" href="#" download="label.jpg" class="btn-link">Download JPEG</a>
+        <a id="downloadPdf" href="#" class="btn-link">Download PDF</a>
       </div>
     </header>
     <main class="canvas-container">

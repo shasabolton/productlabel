@@ -239,6 +239,68 @@
         "photos/magicdrawer/openEmptyLeftIso.webp",
         "photos/magicdrawer/openWithHand.webp"
       ]
+    },
+    {
+      "title": "Mechanical Calculator GPT",
+      "meta": {
+        "bandHeightMM": 90,
+        "frontWidthMM": 220,
+        "sideWidthMM": 20,
+        "dpi": 300
+      },
+      "style": {
+        "backgroundColor": "#ffffff",
+        "borderColor": "#222222",
+        "textColor": "#111111",
+        "accentColor": "#444444",
+        "fontTitle": "bold 48px Montserrat, Arial, sans-serif",
+        "fontSubtitle": "italic 24px Georgia, serif",
+        "fontBody": "20px Georgia, serif",
+        "fontSmall": "14px Arial, sans-serif"
+      },
+      "assets": {
+        "heroImage": "photos/adder/adderhandangle.jpg",
+        "engineeringDrawing": "photos/adder/adderbackFaintBG.jpg",
+        "qrCode": "photos/adder/adderisoFaintBG.jpg",
+        "barcode": "photos/adder/adderisoFaintBG.jpg"
+      },
+      "content": {
+        "front": {
+          "eyebrow": "DIY Mechanical Computing Kit",
+          "title": "MECHANICAL CALCULATOR",
+          "subtitle": "Inspired by early pocket adding machines",
+          "tagline": "Build a real working mechanical computer",
+          "features": "Addition • Subtraction • Multiplication • Division"
+        },
+        "spineTop": {
+          "title": "Mechanical Calculator Kit"
+        },
+        "back": {
+          "title": "Mechanical Calculator Kit",
+          "specs": [
+            "Build time: 1–2 hours",
+            "Difficulty: Moderate",
+            "Components: Precision laser-cut wood",
+            "Tools required: None",
+            "Age: 14+",
+            "Designed and manufactured in Australia"
+          ],
+          "description": "Before electronic calculators existed, arithmetic was performed using ingenious mechanical devices.\n\nThis kit recreates those principles using precision laser-cut components, allowing you to assemble a fully functional calculator capable of real computation.\n\nInspired by historic pocket adding machines, the mechanism demonstrates how gears and number wheels can perform mathematical operations without electronics.",
+          "bullets": [
+            "Fully functional arithmetic mechanism",
+            "Educational and historically inspired",
+            "Smooth mechanical operation",
+            "No electronics required",
+            "Display-worthy finished model"
+          ],
+          "qrLabel": "Watch the mechanism in action\nAssembly tips and demonstration",
+          "model": "Model: MC-01"
+        },
+        "spineBottom": {
+          "title": "Mechanical Calculator Kit"
+        }
+      }
     }
+    
   ]
 }

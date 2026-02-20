@@ -47,11 +47,70 @@ function printCanvas() {
     printWin.focus();
 }
 
-function download() {
-    var dt = document.getElementById("canvas").toDataURL('image/jpeg');
-    this.href = dt;
-};
-document.getElementById("downloadLink").addEventListener('click', download, false);
+function getExportElement() {
+  var canvas = document.getElementById("canvas");
+  var pageDiv = document.getElementById("belly-band-page");
+  return canvas || pageDiv;
+}
+
+function triggerDownload(dataUrl, filename) {
+  var a = document.createElement("a");
+  a.href = dataUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function downloadImage(e, format) {
+  e.preventDefault();
+  var el = getExportElement();
+  if (!el) return;
+  var mime = format === "png" ? "image/png" : "image/jpeg";
+  var ext = format === "png" ? "png" : "jpg";
+  var filename = "label." + ext;
+  var quality = format === "jpeg" ? 0.92 : undefined;
+  if (el.tagName === "CANVAS") {
+    var dataUrl = quality ? el.toDataURL(mime, quality) : el.toDataURL(mime);
+    triggerDownload(dataUrl, filename);
+    return;
+  }
+  if (typeof html2canvas === "undefined") {
+    alert("html2canvas not loaded.");
+    return;
+  }
+  html2canvas(el, { scale: 1, useCORS: true, logging: false }).then(function (canvas) {
+    var dataUrl = quality ? canvas.toDataURL(mime, quality) : canvas.toDataURL(mime);
+    triggerDownload(dataUrl, filename);
+  });
+}
+
+function downloadPng(e) { downloadImage(e, "png"); }
+function downloadJpeg(e) { downloadImage(e, "jpeg"); }
+
+function downloadPdf(e) {
+  e.preventDefault();
+  var el = getExportElement();
+  if (!el) return;
+  if (typeof html2canvas === "undefined" || typeof jspdf === "undefined") {
+    alert("html2canvas or jsPDF not loaded.");
+    return;
+  }
+  var pageKey = document.getElementById("pageSizeSelect").value;
+  var page = pages[pageKey];
+  var w = page ? page.width : 297;
+  var h = page ? page.height : 210;
+  html2canvas(el, { scale: 1, useCORS: true, logging: false }).then(function (canvas) {
+    var imgData = canvas.toDataURL("image/png");
+    var pdf = new jspdf.jsPDF({ orientation: w > h ? "landscape" : "portrait", unit: "mm", format: [w, h] });
+    pdf.addImage(imgData, "PNG", 0, 0, w, h);
+    pdf.save("label.pdf");
+  });
+}
+
+document.getElementById("downloadPng").addEventListener("click", downloadPng, false);
+document.getElementById("downloadJpeg").addEventListener("click", downloadJpeg, false);
+document.getElementById("downloadPdf").addEventListener("click", downloadPdf, false);
 document.getElementById("printBtn").addEventListener('click', printCanvas, false);
 
 var productSelect = document.getElementById("productSelect");
@@ -92,8 +151,8 @@ document.getElementById("tileSelect").onchange = function(){
 
 function setActiveProduct(index){
   activeLabel = products[index];
-  try{document.getElementById("canvas").remove();}
-  catch{}
+  try { document.getElementById("canvas").remove(); } catch(e) {}
+  try { document.getElementById("belly-band-page").remove(); } catch(e) {}
   activeLabel.render();
 }
 
