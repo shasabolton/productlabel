@@ -289,6 +289,22 @@ function getFontFamily(fontStr) {
   }).join(", ");
 }
 
+// html2canvas ignores object-fit, so set explicit dimensions to avoid stretching.
+function sizeImgForExport(img, maxW, maxH) {
+  if (!img.naturalWidth || !img.naturalHeight) return;
+  var r = img.naturalWidth / img.naturalHeight;
+  var w, he;
+  if (maxW / maxH > r) {
+    he = maxH;
+    w = maxH * r;
+  } else {
+    w = maxW;
+    he = maxW / r;
+  }
+  img.style.width = w + "px";
+  img.style.height = he + "px";
+}
+
 function buildSectionTop(w, h, spineTop, back, style, backH) {
   var title = (spineTop && spineTop.title) || back.title || back.spineTitle || "";
   var subheadingBase = (backH || h) / 14;
@@ -349,18 +365,23 @@ function buildSectionFront(w, h, front, style, assets) {
     div.appendChild(tag);
   }
   var imgWrap = document.createElement("div");
-  imgWrap.style.cssText = "flex:1;min-height:0;display:flex;flex-direction:column;gap:0.3em;";
+  imgWrap.style.cssText = "flex:1;min-height:0;display:flex;flex-direction:column;gap:0.3em;align-items:center;";
   var hero = document.createElement("img");
   hero.alt = "Hero";
-  hero.style.cssText = "width:100%;height:auto;max-height:" + (h * 0.38) + "px;object-fit:contain;";
+  hero.crossOrigin = "anonymous";
+  hero.style.cssText = "max-width:100%;max-height:" + (h * 0.38) + "px;object-fit:contain;";
   hero.src = (assets && assets.heroImage) || "";
   if (!hero.src) hero.style.background = "#eee";
+  var contentW = w * 0.92;
+  if (hero.src) hero.onload = function () { sizeImgForExport(this, contentW, h * 0.38); };
   imgWrap.appendChild(hero);
   var draw = document.createElement("img");
   draw.alt = "Drawing";
-  draw.style.cssText = "width:100%;height:auto;max-height:" + (h * 0.18) + "px;object-fit:contain;";
+  draw.crossOrigin = "anonymous";
+  draw.style.cssText = "max-width:100%;max-height:" + (h * 0.18) + "px;object-fit:contain;";
   draw.src = (assets && assets.engineeringDrawing) || "";
   if (!draw.src) draw.style.background = "#ddd";
+  if (draw.src) draw.onload = function () { sizeImgForExport(this, contentW, h * 0.18); };
   imgWrap.appendChild(draw);
   div.appendChild(imgWrap);
   if (front.features) {
@@ -451,8 +472,10 @@ function buildSectionBack(w, h, back, style, assets) {
   qrRow.style.cssText = "display:flex;align-items:center;gap:0.5em;padding:0.3em 0;";
   var qr = document.createElement("img");
   qr.alt = "QR";
+  qr.crossOrigin = "anonymous";
   qr.style.cssText = "width:80px;height:80px;object-fit:contain;background:#eee;flex-shrink:0;";
   qr.src = (assets && assets.qrCode) || "";
+  if (qr.src) qr.onload = function () { sizeImgForExport(this, 80, 80); };
   qrRow.appendChild(qr);
   if (back.qrLabel) {
     var qrLab = document.createElement("div");
@@ -471,8 +494,10 @@ function buildSectionBack(w, h, back, style, assets) {
   barRow.style.cssText = "display:flex;align-items:center;gap:0.5em;padding:0.3em 0;";
   var bar = document.createElement("img");
   bar.alt = "Barcode";
+  bar.crossOrigin = "anonymous";
   bar.style.cssText = "width:150px;height:50px;object-fit:contain;background:#eee;flex-shrink:0;";
   bar.src = (assets && assets.barcode) || "";
+  if (bar.src) bar.onload = function () { sizeImgForExport(this, 150, 50); };
   barRow.appendChild(bar);
   if (back.model) {
     var mod = document.createElement("div");

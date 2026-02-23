@@ -53,6 +53,47 @@ function getExportElement() {
   return canvas || pageDiv;
 }
 
+// For Belly Band: clone into hidden full-size container so html2canvas captures at print resolution.
+// The on-screen div stays scaled for viewing; the clone is used only for export.
+function prepareElementForExport() {
+  var canvas = document.getElementById("canvas");
+  var pageDiv = document.getElementById("belly-band-page");
+  if (canvas) return { el: canvas, cleanup: function () {} };
+  if (!pageDiv) return null;
+  var container = document.getElementById("export-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "export-container";
+    container.style.cssText = "position:fixed;left:-99999px;top:0;width:6000px;height:8000px;overflow:visible;pointer-events:none;";
+    document.body.appendChild(container);
+  }
+  container.innerHTML = "";
+  var clone = pageDiv.cloneNode(true);
+  clone.id = "belly-band-export-clone";
+  clone.style.maxWidth = "none";
+  clone.style.height = pageDiv.style.height || "";
+  container.appendChild(clone);
+  return {
+    el: clone,
+    cleanup: function () { container.innerHTML = ""; }
+  };
+}
+
+function waitForImages(el) {
+  var imgs = el.querySelectorAll("img[src]");
+  var pending = [];
+  for (var i = 0; i < imgs.length; i++) {
+    var img = imgs[i];
+    if (!img.complete) {
+      pending.push(new Promise(function (resolve) {
+        img.onload = resolve;
+        img.onerror = resolve;
+      }));
+    }
+  }
+  return pending.length ? Promise.all(pending) : Promise.resolve();
+}
+
 function triggerDownload(dataUrl, filename) {
   var a = document.createElement("a");
   a.href = dataUrl;
@@ -64,8 +105,9 @@ function triggerDownload(dataUrl, filename) {
 
 function downloadImage(e, format) {
   e.preventDefault();
-  var el = getExportElement();
-  if (!el) return;
+  var prep = prepareElementForExport();
+  if (!prep) return;
+  var el = prep.el;
   var mime = format === "png" ? "image/png" : "image/jpeg";
   var ext = format === "png" ? "png" : "jpg";
   var filename = "label." + ext;
@@ -77,11 +119,16 @@ function downloadImage(e, format) {
   }
   if (typeof html2canvas === "undefined") {
     alert("html2canvas not loaded.");
+    prep.cleanup();
     return;
   }
-  html2canvas(el, { scale: 1, useCORS: true, logging: false }).then(function (canvas) {
+  waitForImages(el).then(function () {
+    return html2canvas(el, { scale: 1, useCORS: true, logging: false });
+  }).then(function (canvas) {
     var dataUrl = quality ? canvas.toDataURL(mime, quality) : canvas.toDataURL(mime);
     triggerDownload(dataUrl, filename);
+  }).catch(function (err) { console.error(err); }).finally(function () {
+    prep.cleanup();
   });
 }
 
@@ -90,21 +137,27 @@ function downloadJpeg(e) { downloadImage(e, "jpeg"); }
 
 function downloadPdf(e) {
   e.preventDefault();
-  var el = getExportElement();
-  if (!el) return;
+  var prep = prepareElementForExport();
+  if (!prep) return;
+  var el = prep.el;
   if (typeof html2canvas === "undefined" || typeof jspdf === "undefined") {
     alert("html2canvas or jsPDF not loaded.");
+    prep.cleanup();
     return;
   }
   var pageKey = document.getElementById("pageSizeSelect").value;
   var page = pages[pageKey];
   var w = page ? page.width : 297;
   var h = page ? page.height : 210;
-  html2canvas(el, { scale: 1, useCORS: true, logging: false }).then(function (canvas) {
+  waitForImages(el).then(function () {
+    return html2canvas(el, { scale: 1, useCORS: true, logging: false });
+  }).then(function (canvas) {
     var imgData = canvas.toDataURL("image/png");
     var pdf = new jspdf.jsPDF({ orientation: w > h ? "landscape" : "portrait", unit: "mm", format: [w, h] });
     pdf.addImage(imgData, "PNG", 0, 0, w, h);
     pdf.save("label.pdf");
+  }).catch(function (err) { console.error(err); }).finally(function () {
+    prep.cleanup();
   });
 }
 
