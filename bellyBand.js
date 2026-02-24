@@ -127,7 +127,7 @@ class bellyBand {
       col.appendChild(buildSectionTop(sectionW, topH, spineTop, back, style, backH));
       col.appendChild(buildSectionFront(sectionW, frontH, front, style, assets));
       col.appendChild(buildSectionBottom(sectionW, bottomH, spineBottom, back, style, backH));
-      col.appendChild(buildSectionBack(sectionW, backH, back, style, assets));
+      col.appendChild(buildSectionBack(sectionW, backH, back, style, assets, true));
       pageDiv.appendChild(col);
     } else {
       var leftCol = document.createElement("div");
@@ -137,11 +137,11 @@ class bellyBand {
       leftCol.appendChild(buildSectionBottom(sectionW, bottomH, spineBottom, back, style, backH));
 
       var rightCol = document.createElement("div");
-      rightCol.style.cssText = "display:flex;flex-direction:column;flex:0 0 auto;width:" + colW + "px;margin-left:" + gapPx + "px;border-left:1px solid " + (style.borderColor || "#222") + ";";
+      rightCol.style.cssText = "display:flex;flex-direction:column;flex:0 0 auto;width:" + colW + "px;margin-left:" + gapPx + "px;";
       var spacer = document.createElement("div");
       spacer.style.cssText = "height:" + topH + "px;flex-shrink:0;";
       rightCol.appendChild(spacer);
-      rightCol.appendChild(buildSectionBack(sectionW, backH, back, style, assets));
+      rightCol.appendChild(buildSectionBack(sectionW, backH, back, style, assets, false));
 
       var row = document.createElement("div");
       row.style.cssText = "display:flex;flex-direction:row;flex:0 0 auto;align-items:flex-start;";
@@ -305,19 +305,116 @@ function sizeImgForExport(img, maxW, maxH) {
   img.style.height = he + "px";
 }
 
+function imageHasAlpha(img, callback) {
+  if (!img.naturalWidth || !img.naturalHeight) { callback(false); return; }
+  try {
+    var canvas = document.createElement("canvas");
+    canvas.width = Math.min(img.naturalWidth, 64);
+    canvas.height = Math.min(img.naturalHeight, 64);
+    var ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    for (var i = 3; i < data.length; i += 4) {
+      if (data[i] < 255) { callback(true); return; }
+    }
+    callback(false);
+  } catch (e) {
+    callback(false);
+  }
+}
+
+function getAlphaBoundingBoxX(img, callback) {
+  getAlphaBoundingBox(img, function (bbox) {
+    if (!bbox) { callback(null); return; }
+    callback({ minX: bbox.minX, maxX: bbox.maxX, contentWidth: bbox.contentWidth, contentCenterX: bbox.contentCenterX });
+  });
+}
+
+function getAlphaBoundingBox(img, callback) {
+  if (!img.naturalWidth || !img.naturalHeight) { callback(null); return; }
+  var alphaThreshold = 10;
+  var maxDim = 400;
+  try {
+    var cw = img.naturalWidth;
+    var ch = img.naturalHeight;
+    if (cw > maxDim || ch > maxDim) {
+      var s = maxDim / Math.max(cw, ch);
+      cw = Math.max(1, Math.round(cw * s));
+      ch = Math.max(1, Math.round(ch * s));
+    }
+    var canvas = document.createElement("canvas");
+    canvas.width = cw;
+    canvas.height = ch;
+    var ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, cw, ch);
+    var data = ctx.getImageData(0, 0, cw, ch).data;
+    var minX = cw, maxX = -1, minY = ch, maxY = -1;
+    for (var y = 0; y < ch; y++) {
+      for (var x = 0; x < cw; x++) {
+        var i = (y * cw + x) * 4 + 3;
+        if (data[i] > alphaThreshold) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX < minX || maxY < minY) { callback(null); return; }
+    var toNaturalW = img.naturalWidth / cw;
+    var toNaturalH = img.naturalHeight / ch;
+    var contentWidth = (maxX - minX + 1) * toNaturalW;
+    var contentHeight = (maxY - minY + 1) * toNaturalH;
+    var contentCenterX = (minX + maxX) / 2 * toNaturalW;
+    var contentCenterY = (minY + maxY) / 2 * toNaturalH;
+    callback({
+      minX: minX * toNaturalW, maxX: maxX * toNaturalW,
+      minY: minY * toNaturalH, maxY: maxY * toNaturalH,
+      contentWidth: contentWidth, contentHeight: contentHeight,
+      contentCenterX: contentCenterX, contentCenterY: contentCenterY
+    });
+  } catch (e) {
+    callback(null);
+  }
+}
+
+function imageUrlSuggestsAlpha(url) {
+  if (!url || typeof url !== "string") return false;
+  return /\.(png|webp)(\?|#|$)/i.test(url.split("/").pop());
+}
+
 function buildSectionTop(w, h, spineTop, back, style, backH) {
   var title = (spineTop && spineTop.title) || back.title || back.spineTitle || "";
   var subheadingBase = (backH || h) / 14;
   var fontTitle = getFontFamily(style.fontTitle);
   var div = document.createElement("div");
   div.className = "bb-section bb-top";
-  div.style.cssText = "box-sizing:border-box;width:" + w + "px;height:" + h + "px;border:1px solid " + (style.borderColor || "#222") + ";padding:2%;display:flex;align-items:center;justify-content:center;overflow:hidden;";
+  div.style.cssText = "box-sizing:border-box;width:" + w + "px;height:" + h + "px;border:8px solid " + (style.borderColor || "#222") + ";padding:2%;display:flex;align-items:center;justify-content:center;overflow:hidden;";
   var span = document.createElement("span");
   span.className = "bb-scalable bb-balance";
   span.style.cssText = "color:" + (style.textColor || "#111") + ";font-family:" + fontTitle + ";font-size:calc(" + subheadingBase + "px * var(--bb-scale, 1));text-align:center;";
   span.textContent = title;
   div.appendChild(span);
   return div;
+}
+
+function buildDecorDoubleLineBand(borderColor) {
+  var gap = 12;
+  var lineThick = 8;
+  var bandH = gap + lineThick + gap + lineThick;
+  var c = borderColor || "#222";
+  var wrap = document.createElement("div");
+  wrap.style.cssText = "flex-shrink:0;height:" + bandH + "px;opacity:0.5;padding-top:" + gap + "px;box-sizing:border-box;";
+  var l1 = document.createElement("hr");
+  l1.style.cssText = "border:none;border-top:" + lineThick + "px solid " + c + ";margin:0;";
+  wrap.appendChild(l1);
+  var spacer = document.createElement("div");
+  spacer.style.cssText = "height:" + gap + "px;";
+  wrap.appendChild(spacer);
+  var l2 = document.createElement("hr");
+  l2.style.cssText = "border:none;border-top:" + lineThick + "px solid " + c + ";margin:0;";
+  wrap.appendChild(l2);
+  return wrap;
 }
 
 function buildSectionFront(w, h, front, style, assets) {
@@ -327,70 +424,156 @@ function buildSectionFront(w, h, front, style, assets) {
   var fontTitle = getFontFamily(style.fontTitle);
   var fontSubtitle = getFontFamily(style.fontSubtitle);
   var fontBody = getFontFamily(style.fontBody);
+  var borderColor = style.borderColor || "#222";
   var div = document.createElement("div");
   div.className = "bb-section bb-front";
-  div.style.cssText = "box-sizing:border-box;width:" + w + "px;height:" + h + "px;border:1px solid " + (style.borderColor || "#222") + ";padding:4%;display:flex;flex-direction:column;overflow:hidden;color:" + (style.textColor || "#111") + ";";
+  div.style.cssText = "box-sizing:border-box;width:" + w + "px;height:" + h + "px;border:8px solid " + borderColor + ";padding:12px 0;margin-top:-8px;display:flex;flex-direction:column;overflow:visible;color:" + (style.textColor || "#111") + ";position:relative;";
+  var bandH = 12 + 8 + 12 + 8;
+  var sectionContentW = w - 16;
+  var oneMargin = sectionContentW * 0.04;
+  var targetAlphaW = sectionContentW + oneMargin;
+  var sectionBg = style.backgroundColor || "#fff";
+  var hero = document.createElement("img");
+  hero.alt = "Hero";
+  hero.crossOrigin = "anonymous";
+  hero.style.cssText = "position:absolute;left:0;top:0;width:" + targetAlphaW + "px;height:auto;display:block;";
+  hero.src = (assets && assets.heroImage) ? String(assets.heroImage) : "";
+  if (!hero.src) hero.style.background = "#eee";
+  if (hero.src) {
+    hero.onload = function () {
+      getAlphaBoundingBox(this, function (bbox) {
+        if (bbox && bbox.contentWidth > 0) {
+          var scale = targetAlphaW / bbox.contentWidth;
+          var imgW = this.naturalWidth * scale;
+          var imgH = this.naturalHeight * scale;
+          var heroLeft = -bbox.minX * scale - oneMargin / 2;
+          this.style.width = imgW + "px";
+          this.style.height = imgH + "px";
+          this.style.left = heroLeft + "px";
+          var alphaReachesBottom = bbox.maxY >= this.naturalHeight * 0.995;
+          var fadeOverlay = null;
+          var fadeHeight = 0;
+          if (alphaReachesBottom && bbox.contentHeight > 0) {
+            var alphaH = bbox.contentHeight * scale;
+            fadeHeight = Math.max(8, 0.05 * alphaH);
+            fadeOverlay = document.createElement("div");
+            fadeOverlay.setAttribute("aria-hidden", "true");
+            fadeOverlay.style.cssText = "position:absolute;left:" + heroLeft + "px;width:" + imgW + "px;height:" + fadeHeight + "px;pointer-events:none;background:linear-gradient(to top, " + sectionBg + " 0%, transparent 100%);";
+            fadeOverlay.style.top = (imgH - fadeHeight) + "px";
+            div.appendChild(fadeOverlay);
+          }
+          var section = this.parentElement;
+          var taglineEl = section && section.querySelector(".bb-tagline");
+          if (taglineEl) {
+            var self = this;
+            var bboxY = bbox.minY;
+            var scaleY = scale;
+            var overlay = fadeOverlay;
+            var fh = fadeHeight;
+            requestAnimationFrame(function () {
+              requestAnimationFrame(function () {
+                if (!section.isConnected) return;
+                var sectionRect = section.getBoundingClientRect();
+                var taglineRect = taglineEl.getBoundingClientRect();
+                var taglineBottomFromSectionTop = taglineRect.bottom - sectionRect.top;
+                var top = Math.max(0, taglineBottomFromSectionTop - bboxY * scaleY);
+                self.style.top = top + "px";
+                if (overlay && fh) {
+                  overlay.style.top = (top + imgH - fh) + "px";
+                  overlay.style.left = heroLeft + "px";
+                }
+                var heroSpacer = section.querySelector(".bb-hero-spacer");
+                if (heroSpacer) heroSpacer.style.height = Math.max(0, top + imgH - taglineBottomFromSectionTop) + "px";
+              });
+            });
+          } else if (fadeOverlay) {
+            fadeOverlay.style.top = (imgH - fadeHeight) + "px";
+          }
+          if (!taglineEl) {
+            var sectionRef = this.parentElement;
+            var spacerRef = sectionRef && sectionRef.querySelector(".bb-hero-spacer");
+            var imgHNoTag = imgH;
+            if (spacerRef) {
+              requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                  if (!sectionRef || !sectionRef.isConnected) return;
+                  var prev = spacerRef.previousElementSibling;
+                  var aboveBottom = prev ? (prev.getBoundingClientRect().bottom - sectionRef.getBoundingClientRect().top) : bandH * 2;
+                  spacerRef.style.height = Math.max(0, imgHNoTag - aboveBottom) + "px";
+                });
+              });
+            }
+          }
+        } else {
+          this.style.width = targetAlphaW + "px";
+          this.style.height = "auto";
+        }
+      }.bind(this));
+    };
+  }
+  div.appendChild(hero);
+  div.appendChild(buildDecorDoubleLineBand(borderColor));
+  var contentWrap = document.createElement("div");
+  contentWrap.style.cssText = "flex:1;min-height:0;display:flex;flex-direction:column;padding:" + bandH + "px 4% " + bandH + "px 4%;box-sizing:border-box;overflow:visible;";
   if (front.eyebrow) {
     var eb = document.createElement("div");
     eb.className = "bb-eyebrow bb-scalable bb-balance";
     eb.style.cssText = "text-align:center;font-family:" + fontSubtitle + ";font-size:calc(" + subheadingBase + "px * var(--bb-scale, 1));margin-bottom:0.3em;";
     eb.textContent = front.eyebrow;
-    div.appendChild(eb);
+    contentWrap.appendChild(eb);
     var dl = document.createElement("hr");
-    dl.style.cssText = "border:none;border-top:2px solid " + (style.borderColor || "#222") + ";margin:0.2em 0 0.5em 0;";
-    div.appendChild(dl);
+    dl.style.cssText = "border:none;border-top:2px solid " + borderColor + ";margin:0.2em 0 0.5em 0;opacity:1;";
+    contentWrap.appendChild(dl);
     var dl2 = document.createElement("hr");
-    dl2.style.cssText = "border:none;border-top:1px solid " + (style.borderColor || "#222") + ";margin:-3px 0 0.5em 0;";
-    div.appendChild(dl2);
+    dl2.style.cssText = "border:none;border-top:1px solid " + borderColor + ";margin:-3px 0 0.5em 0;opacity:1;";
+    contentWrap.appendChild(dl2);
   }
   if (front.title) {
     var tit = document.createElement("h1");
     tit.className = "bb-title bb-scalable bb-balance";
     tit.style.cssText = "text-align:center;font-family:" + fontTitle + ";font-size:calc(" + headingBase + "px * var(--bb-scale, 1));margin:0 0 0.3em 0;line-height:1.1;";
     tit.textContent = front.title;
-    div.appendChild(tit);
+    contentWrap.appendChild(tit);
   }
   if (front.subtitle) {
     var sub = document.createElement("div");
     sub.className = "bb-subtitle bb-scalable bb-balance";
     sub.style.cssText = "text-align:center;font-family:" + fontSubtitle + ";font-style:italic;font-size:calc(" + contentBase + "px * var(--bb-scale, 1));margin-bottom:0.2em;";
     sub.textContent = front.subtitle;
-    div.appendChild(sub);
+    contentWrap.appendChild(sub);
   }
   if (front.tagline) {
     var tag = document.createElement("div");
     tag.className = "bb-tagline bb-scalable bb-balance";
     tag.style.cssText = "text-align:center;font-family:" + fontBody + ";font-size:calc(" + contentBase + "px * var(--bb-scale, 1));margin-bottom:0.5em;";
     tag.textContent = front.tagline;
-    div.appendChild(tag);
+    contentWrap.appendChild(tag);
   }
-  var imgWrap = document.createElement("div");
-  imgWrap.style.cssText = "flex:1;min-height:0;display:flex;flex-direction:column;gap:0.3em;align-items:center;";
-  var hero = document.createElement("img");
-  hero.alt = "Hero";
-  hero.crossOrigin = "anonymous";
-  hero.style.cssText = "max-width:100%;max-height:" + (h * 0.38) + "px;object-fit:contain;";
-  hero.src = (assets && assets.heroImage) || "";
-  if (!hero.src) hero.style.background = "#eee";
-  var contentW = w * 0.92;
-  if (hero.src) hero.onload = function () { sizeImgForExport(this, contentW, h * 0.38); };
-  imgWrap.appendChild(hero);
+  var heroSpacer = document.createElement("div");
+  heroSpacer.className = "bb-hero-spacer";
+  heroSpacer.style.cssText = "flex-shrink:0;height:0;";
+  contentWrap.appendChild(heroSpacer);
+  var imgBlock = document.createElement("div");
+  imgBlock.style.cssText = "flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;margin-top:0.3em;";
+  // Engineering drawing below hero: max width = border width, height fits above features (flex space)
   var draw = document.createElement("img");
   draw.alt = "Drawing";
-  draw.crossOrigin = "anonymous";
-  draw.style.cssText = "max-width:100%;max-height:" + (h * 0.18) + "px;object-fit:contain;";
-  draw.src = (assets && assets.engineeringDrawing) || "";
+  var drawUrl = (assets && assets.engineeringDrawing) ? String(assets.engineeringDrawing) : "";
+  if (drawUrl && !/\.svg(\?|#|$)/i.test(drawUrl)) draw.crossOrigin = "anonymous";
+  draw.style.cssText = "max-width:" + sectionContentW + "px;width:100%;max-height:100%;object-fit:contain;object-position:top;display:block;";
+  draw.src = drawUrl;
   if (!draw.src) draw.style.background = "#ddd";
-  if (draw.src) draw.onload = function () { sizeImgForExport(this, contentW, h * 0.18); };
-  imgWrap.appendChild(draw);
-  div.appendChild(imgWrap);
+  imgBlock.appendChild(draw);
+  contentWrap.appendChild(imgBlock);
   if (front.features) {
     var feat = document.createElement("div");
     feat.className = "bb-features bb-scalable bb-balance";
     feat.style.cssText = "text-align:center;font-family:" + fontBody + ";font-size:calc(" + contentBase + "px * var(--bb-scale, 1));margin-top:0.3em;";
     feat.textContent = front.features;
-    div.appendChild(feat);
+    contentWrap.appendChild(feat);
   }
+  div.appendChild(contentWrap);
+  div.appendChild(buildDecorDoubleLineBand(borderColor));
   return div;
 }
 
@@ -400,7 +583,7 @@ function buildSectionBottom(w, h, spineBottom, back, style, backH) {
   var fontTitle = getFontFamily(style.fontTitle);
   var div = document.createElement("div");
   div.className = "bb-section bb-bottom";
-  div.style.cssText = "box-sizing:border-box;width:" + w + "px;height:" + h + "px;border:1px solid " + (style.borderColor || "#222") + ";padding:2%;display:flex;align-items:center;justify-content:center;overflow:hidden;";
+  div.style.cssText = "box-sizing:border-box;width:" + w + "px;height:" + h + "px;border:8px solid " + (style.borderColor || "#222") + ";padding:2%;margin-top:-8px;display:flex;align-items:center;justify-content:center;overflow:hidden;";
   var span = document.createElement("span");
   span.className = "bb-scalable bb-balance";
   span.style.cssText = "color:" + (style.textColor || "#111") + ";font-family:" + fontTitle + ";font-size:calc(" + subheadingBase + "px * var(--bb-scale, 1));text-align:center;";
@@ -409,22 +592,29 @@ function buildSectionBottom(w, h, spineBottom, back, style, backH) {
   return div;
 }
 
-function buildSectionBack(w, h, back, style, assets) {
+function buildSectionBack(w, h, back, style, assets, stackAfter) {
+  if (stackAfter === undefined) stackAfter = true;
   var subheadingBase = h / 14;
   var contentBase = h / 20;
   var tinyBase = h / 35;
   var fontTitle = getFontFamily(style.fontTitle);
   var fontBody = getFontFamily(style.fontBody);
   var fontSmall = getFontFamily(style.fontSmall);
+  var borderColor = style.borderColor || "#222";
+  var bandH = 12 + 8 + 12 + 8;
+  var dividerStyle = "border:none;border-top:8px solid " + borderColor + ";margin:0.2em 0;opacity:0.5;";
   var div = document.createElement("div");
   div.className = "bb-section bb-back";
-  div.style.cssText = "box-sizing:border-box;width:" + w + "px;height:" + h + "px;border:1px solid " + (style.borderColor || "#222") + ";padding:4%;display:flex;flex-direction:column;overflow:hidden;color:" + (style.textColor || "#111") + ";";
+  div.style.cssText = "box-sizing:border-box;width:" + w + "px;height:" + h + "px;border:8px solid " + borderColor + ";padding:12px 0;" + (stackAfter ? "margin-top:-8px;" : "") + "display:flex;flex-direction:column;overflow:hidden;color:" + (style.textColor || "#111") + ";";
+  div.appendChild(buildDecorDoubleLineBand(borderColor));
+  var contentWrap = document.createElement("div");
+  contentWrap.style.cssText = "flex:1;min-height:0;display:flex;flex-direction:column;padding:" + bandH + "px 4% " + bandH + "px 4%;box-sizing:border-box;overflow:hidden;";
   if (back.title || back.spineTitle) {
     var st = document.createElement("h2");
     st.className = "bb-scalable bb-balance";
     st.style.cssText = "text-align:center;font-family:" + fontTitle + ";font-size:calc(" + subheadingBase + "px * var(--bb-scale, 1));margin:0 0 0.5em 0;";
     st.textContent = back.title || back.spineTitle;
-    div.appendChild(st);
+    contentWrap.appendChild(st);
   }
   if (back.specs && back.specs.length) {
     var ul = document.createElement("ul");
@@ -435,20 +625,20 @@ function buildSectionBack(w, h, back, style, assets) {
       li.textContent = s;
       ul.appendChild(li);
     });
-    div.appendChild(ul);
+    contentWrap.appendChild(ul);
     var hr1 = document.createElement("hr");
-    hr1.style.cssText = "border:none;border-top:1px solid " + (style.borderColor || "#222") + ";margin:0.2em 0;";
-    div.appendChild(hr1);
+    hr1.style.cssText = dividerStyle;
+    contentWrap.appendChild(hr1);
   }
   if (back.description) {
     var desc = document.createElement("div");
     desc.className = "bb-scalable";
     desc.style.cssText = "font-family:" + fontBody + ";font-size:calc(" + contentBase + "px * var(--bb-scale, 1));margin-bottom:0.5em;text-align:justify;white-space:pre-wrap;";
     desc.textContent = back.description;
-    div.appendChild(desc);
+    contentWrap.appendChild(desc);
     var hr2 = document.createElement("hr");
-    hr2.style.cssText = "border:none;border-top:1px solid " + (style.borderColor || "#222") + ";margin:0.2em 0;";
-    div.appendChild(hr2);
+    hr2.style.cssText = dividerStyle;
+    contentWrap.appendChild(hr2);
   }
   if (back.bullets && back.bullets.length) {
     var bul = document.createElement("ul");
@@ -459,14 +649,13 @@ function buildSectionBack(w, h, back, style, assets) {
       li.textContent = b;
       bul.appendChild(li);
     });
-    div.appendChild(bul);
+    contentWrap.appendChild(bul);
     var hr3 = document.createElement("hr");
-    hr3.style.cssText = "border:none;border-top:1px solid " + (style.borderColor || "#222") + ";margin:0.2em 0;";
-    div.appendChild(hr3);
+    hr3.style.cssText = dividerStyle;
+    contentWrap.appendChild(hr3);
   }
   var footer = document.createElement("div");
   footer.style.cssText = "margin-top:auto;display:flex;flex-direction:column;gap:0;";
-  var borderColor = style.borderColor || "#222";
 
   var qrRow = document.createElement("div");
   qrRow.style.cssText = "display:flex;align-items:center;gap:0.5em;padding:0.3em 0;";
@@ -487,7 +676,7 @@ function buildSectionBack(w, h, back, style, assets) {
   footer.appendChild(qrRow);
 
   var hrFooter = document.createElement("hr");
-  hrFooter.style.cssText = "border:none;border-top:1px solid " + borderColor + ";margin:0.2em 0;";
+  hrFooter.style.cssText = dividerStyle;
   footer.appendChild(hrFooter);
 
   var barRow = document.createElement("div");
@@ -507,7 +696,9 @@ function buildSectionBack(w, h, back, style, assets) {
     barRow.appendChild(mod);
   }
   footer.appendChild(barRow);
-  div.appendChild(footer);
+  contentWrap.appendChild(footer);
+  div.appendChild(contentWrap);
+  div.appendChild(buildDecorDoubleLineBand(borderColor));
   return div;
 }
 

@@ -259,8 +259,8 @@
         "fontSmall": "14px Arial, sans-serif"
       },
       "assets": {
-        "heroImage": "photos/adder/adderhandangle.jpg",
-        "engineeringDrawing": "photos/adder/adderbackFaintBG.jpg",
+        "heroImage": "photos/adder/calcInHandNoBackground.png",
+        "engineeringDrawing": "photos/adder/calcFullExplode.svg",
         "qrCode": "photos/adder/adderisoFaintBG.jpg",
         "barcode": "photos/adder/adderisoFaintBG.jpg"
       },
@@ -270,7 +270,7 @@
           "title": "MECHANICAL CALCULATOR",
           "subtitle": "Inspired by early pocket adding machines",
           "tagline": "Build a real working mechanical computer",
-          "features": "Addition • Subtraction • Multiplication • Division"
+          "features": "Add • Subtract • Multiply • Divide"
         },
         "spineTop": {
           "title": "Mechanical Calculator Kit"
@@ -285,7 +285,7 @@
             "Age: 14+",
             "Designed and manufactured in Australia"
           ],
-          "description": "Before electronic calculators existed, arithmetic was performed using ingenious mechanical devices.\n\nThis kit recreates those principles using precision laser-cut components, allowing you to assemble a fully functional calculator capable of real computation.\n\nInspired by historic pocket adding machines, the mechanism demonstrates how gears and number wheels can perform mathematical operations without electronics.",
+          "description": "Before electronic calculators existed, arithmetic was performed using ingenious mechanical devices.\n\nThis kit recreates those principles using precision laser-cut components, allowing you to assemble a fully functional mechanical calculator capable of real computation",
           "bullets": [
             "Fully functional arithmetic mechanism",
             "Educational and historically inspired",

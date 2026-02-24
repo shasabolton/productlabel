@@ -1,17 +1,17 @@
-var activeLabel;
+﻿var activeLabel;
 var themes = [];
 var selectedTheme = null;
 
 // Page sizes in mm (width x height)
 var pages = {
-  "A2 Portrait": { width: 420, height: 594, margin: 10, printSize: "A2 portrait" },
-  "A2 Landscape": { width: 594, height: 420, margin: 10, printSize: "A2 landscape" },
-  "A3 Portrait": { width: 297, height: 420, margin: 10, printSize: "A3 portrait" },
-  "A3 Landscape": { width: 420, height: 297, margin: 10, printSize: "A3 landscape" },
-  "A4 Portrait": { width: 210, height: 297, margin: 10, printSize: "A4 portrait" },
-  "A4 Landscape": { width: 297, height: 210, margin: 10, printSize: "A4 landscape" },
-  "A5 Portrait": { width: 148, height: 210, margin: 10, printSize: "A5 portrait" },
-  "A5 Landscape": { width: 210, height: 148, margin: 10, printSize: "A5 landscape" }
+  "A2 Portrait": { width: 420, height: 594, margin: 5, printSize: "A2 portrait" },
+  "A2 Landscape": { width: 594, height: 420, margin: 5, printSize: "A2 landscape" },
+  "A3 Portrait": { width: 297, height: 420, margin: 5, printSize: "A3 portrait" },
+  "A3 Landscape": { width: 420, height: 297, margin: 5, printSize: "A3 landscape" },
+  "A4 Portrait": { width: 210, height: 297, margin: 5, printSize: "A4 portrait" },
+  "A4 Landscape": { width: 297, height: 210, margin: 5, printSize: "A4 landscape" },
+  "A5 Portrait": { width: 148, height: 210, margin: 5, printSize: "A5 portrait" },
+  "A5 Landscape": { width: 210, height: 148, margin: 5, printSize: "A5 landscape" }
 };
 
 // Template classes - each has constructor(data) and render()
