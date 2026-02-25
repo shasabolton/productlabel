@@ -405,10 +405,11 @@ function buildSectionTop(w, h, spineTop, back, style, backH) {
 function buildDecorDoubleLineBand(borderColor) {
   var gap = 12;
   var lineThick = 8;
-  var bandH = gap + lineThick + gap + lineThick;
+  var topPad = 4;
+  var bandH = topPad + lineThick + gap + lineThick;
   var c = borderColor || "#222";
   var wrap = document.createElement("div");
-  wrap.style.cssText = "flex-shrink:0;height:" + bandH + "px;opacity:0.5;padding-top:" + gap + "px;box-sizing:border-box;";
+  wrap.style.cssText = "flex-shrink:0;height:" + bandH + "px;opacity:0.5;padding-top:" + topPad + "px;box-sizing:border-box;";
   var l1 = document.createElement("hr");
   l1.style.cssText = "border:none;border-top:" + lineThick + "px solid " + c + ";margin:0;";
   wrap.appendChild(l1);
@@ -519,7 +520,8 @@ function buildSectionFront(w, h, front, style, assets) {
   div.appendChild(hero);
   div.appendChild(buildDecorDoubleLineBand(borderColor));
   var contentWrap = document.createElement("div");
-  contentWrap.style.cssText = "flex:1;min-height:0;display:flex;flex-direction:column;padding:" + bandH + "px 4% " + bandH + "px 4%;box-sizing:border-box;overflow:visible;";
+  var contentBottomPad = 8;
+  contentWrap.style.cssText = "flex:1;min-height:0;display:flex;flex-direction:column;padding:" + bandH + "px 4% " + contentBottomPad + "px 4%;box-sizing:border-box;overflow:visible;";
   if (front.eyebrow) {
     var eb = document.createElement("div");
     eb.className = "bb-eyebrow bb-scalable bb-balance";
