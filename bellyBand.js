@@ -536,23 +536,27 @@ function buildSectionFront(w, h, front, style, assets) {
     contentWrap.appendChild(dl2);
   }
   if (front.title) {
-    var tit = document.createElement("h1");
+    var tit = document.createElement("div");
     tit.className = "bb-title bb-scalable bb-balance";
-    tit.style.cssText = "text-align:center;font-family:" + fontTitle + ";font-size:calc(" + headingBase + "px * var(--bb-scale, 1));margin:0 0 0.3em 0;line-height:1.1;";
+    tit.style.cssText = "text-align:center;font-family:" + fontTitle + ";font-size:calc(" + headingBase + "px * var(--bb-scale, 1));margin:0;line-height:1.1;padding:0;";
+    tit.style.setProperty("margin-bottom", "0", "important");
     tit.textContent = front.title;
     contentWrap.appendChild(tit);
   }
   if (front.subtitle) {
     var sub = document.createElement("div");
     sub.className = "bb-subtitle bb-scalable bb-balance";
-    sub.style.cssText = "text-align:center;font-family:" + fontSubtitle + ";font-style:italic;font-size:calc(" + contentBase + "px * var(--bb-scale, 1));margin-bottom:0.2em;";
+    sub.style.cssText = "text-align:center;font-family:" + fontSubtitle + ";font-style:italic;font-size:calc(" + contentBase + "px * var(--bb-scale, 1));margin:0;padding:0;";
+    sub.style.setProperty("margin-bottom", "0", "important");
     sub.textContent = front.subtitle;
     contentWrap.appendChild(sub);
   }
   if (front.tagline) {
     var tag = document.createElement("div");
     tag.className = "bb-tagline bb-scalable bb-balance";
-    tag.style.cssText = "text-align:center;font-family:" + fontBody + ";font-size:calc(" + contentBase + "px * var(--bb-scale, 1));margin-bottom:0.5em;";
+    tag.style.cssText = "text-align:center;font-family:" + fontBody + ";font-size:calc(" + contentBase + "px * var(--bb-scale, 1));margin:0;padding:0;line-height:1.2;";
+    tag.style.setProperty("margin-top", "0.15em", "important");
+    tag.style.setProperty("margin-bottom", "0.5em", "important");
     tag.textContent = front.tagline;
     contentWrap.appendChild(tag);
   }

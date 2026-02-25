@@ -260,7 +260,7 @@
       },
       "assets": {
         "heroImage": "photos/adder/calcInHandNoBackground.png",
-        "engineeringDrawing": "photos/adder/calcFullExplode.svg",
+        "engineeringDrawing": "photos/adder/calcFullExplodeIsoLeft.svg",
         "smallImages":["photos/adder/adderbackFaintBG.jpg",
         "photos/adder/adderisoFaintBG.jpg"],
         "qrCode": "photos/adder/calculaterQR.png",
