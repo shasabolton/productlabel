@@ -1,7 +1,7 @@
 class bellyBand {
   constructor(data) {
     this.labelData = data;
-    this.boxSize = { width: 310, height: 222, depth: 20 };
+    this.boxSize = { width: 310, height: 222, depth: 17 };
   }
   // --- Original canvas render (commented out) ---
   // render() {
@@ -123,7 +123,7 @@ class bellyBand {
 
     if (vertical) {
       var col = document.createElement("div");
-      col.style.cssText = "display:flex;flex-direction:column;flex:0 0 auto;width:100%;";
+      col.style.cssText = "display:flex;flex-direction:column;flex:0 0 auto;width:100%;position:relative;z-index:1;";
       col.appendChild(buildSectionTop(sectionW, topH, spineTop, back, style, backH));
       col.appendChild(buildSectionFront(sectionW, frontH, front, style, assets));
       col.appendChild(buildSectionBottom(sectionW, bottomH, spineBottom, back, style, backH, assets));
@@ -144,7 +144,7 @@ class bellyBand {
       rightCol.appendChild(buildSectionBack(sectionW, backH, back, style, assets, false));
 
       var row = document.createElement("div");
-      row.style.cssText = "display:flex;flex-direction:row;flex:0 0 auto;align-items:flex-start;";
+      row.style.cssText = "display:flex;flex-direction:row;flex:0 0 auto;align-items:flex-start;position:relative;z-index:1;";
       row.appendChild(leftCol);
       row.appendChild(rightCol);
       pageDiv.appendChild(row);
@@ -159,6 +159,31 @@ class bellyBand {
     cutLineBottom.setAttribute("aria-hidden", "true");
     cutLineBottom.style.cssText = "position:absolute;left:50%;bottom:0;width:1px;height:" + cutLineH + "px;margin-left:-1px;background:#999;pointer-events:none;";
     pageDiv.appendChild(cutLineBottom);
+
+    var borderColor = style.borderColor || "#222";
+    var borderW = 8;
+    var lineStyle = "position:absolute;top:-" + marginPx + "px;width:" + borderW + "px;height:" + pageHeightPx + "px;background:" + borderColor + ";pointer-events:none;z-index:0;";
+    if (vertical) {
+      var vLeft = document.createElement("div");
+      vLeft.setAttribute("aria-hidden", "true");
+      vLeft.style.cssText = "left:" + marginPx + "px;" + lineStyle;
+      pageDiv.appendChild(vLeft);
+      var vRight = document.createElement("div");
+      vRight.setAttribute("aria-hidden", "true");
+      vRight.style.cssText = "left:" + (marginPx + availW - borderW) + "px;" + lineStyle;
+      pageDiv.appendChild(vRight);
+    } else {
+      var x1 = marginPx;
+      var x2 = marginPx + colW - borderW;
+      var x3 = marginPx + colW + gapPx;
+      var x4 = marginPx + 2 * colW + gapPx - borderW;
+      [ x1, x2, x3, x4 ].forEach(function (x) {
+        var line = document.createElement("div");
+        line.setAttribute("aria-hidden", "true");
+        line.style.cssText = "left:" + x + "px;" + lineStyle;
+        pageDiv.appendChild(line);
+      });
+    }
 
     container.appendChild(pageDiv);
     var self = this;
@@ -403,10 +428,10 @@ function buildSectionTop(w, h, spineTop, back, style, backH) {
   var fontTitle = getFontFamily(style.fontTitle);
   var div = document.createElement("div");
   div.className = "bb-section bb-top";
-  div.style.cssText = "box-sizing:border-box;width:" + w + "px;height:" + h + "px;border:8px solid " + (style.borderColor || "#222") + ";padding:2%;display:flex;align-items:center;justify-content:center;overflow:hidden;";
+  div.style.cssText = "box-sizing:border-box;width:" + w + "px;height:" + h + "px;border:8px solid #000;padding:2%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#000;";
   var span = document.createElement("span");
   span.className = "bb-scalable bb-balance";
-  span.style.cssText = "color:" + (style.textColor || "#111") + ";font-family:" + fontTitle + ";font-size:calc(" + subheadingBase + "px * var(--bb-scale, 1));text-align:center;";
+  span.style.cssText = "color:#fff;font-family:" + fontTitle + ";font-size:calc(" + subheadingBase + "px * var(--bb-scale, 1));text-align:center;";
   span.textContent = title;
   div.appendChild(span);
   return div;
@@ -611,13 +636,13 @@ function buildSectionBottom(w, h, spineBottom, back, style, backH, assets) {
   var fontSubtitle = getFontFamily(style.fontSubtitle);
   var div = document.createElement("div");
   div.className = "bb-section bb-bottom";
-  div.style.cssText = "box-sizing:border-box;width:" + w + "px;height:" + h + "px;border:8px solid " + (style.borderColor || "#222") + ";padding:2%;margin-top:-8px;display:flex;align-items:center;justify-content:center;overflow:hidden;";
+  div.style.cssText = "box-sizing:border-box;width:" + w + "px;height:" + h + "px;border:8px solid #000;padding:2%;margin-top:-8px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#000;";
   var wrap = document.createElement("div");
   wrap.style.cssText = "display:flex;flex-direction:row;align-items:center;justify-content:center;gap:0.5em;flex-wrap:nowrap;max-width:100%;";
   var logo = document.createElement("img");
   logo.alt = "Logo";
   logo.crossOrigin = "anonymous";
-  logo.style.cssText = "height:" + innerH + "px;width:auto;max-width:50%;object-fit:contain;display:block;background:transparent;flex-shrink:0;";
+  logo.style.cssText = "height:" + innerH + "px;width:auto;max-width:50%;object-fit:contain;display:block;background:transparent;flex-shrink:0;filter:invert(1);";
   logo.src = (assets && assets.spineLogo) ? String(assets.spineLogo) : "";
   if (logo.src && !/\.svg(\?|#|$)/i.test(logo.src)) logo.crossOrigin = "anonymous";
   if (!logo.src) logo.style.background = "#eee";
@@ -625,11 +650,11 @@ function buildSectionBottom(w, h, spineBottom, back, style, backH, assets) {
   var textBlock = document.createElement("div");
   textBlock.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.15em;flex-shrink:1;min-width:0;text-align:center;";
   var urlLine = document.createElement("span");
-  urlLine.style.cssText = "font-family:" + fontTitle + ";font-size:" + subheadingBase + "px;color:" + (style.textColor || "#111") + ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;";
+  urlLine.style.cssText = "font-family:" + fontTitle + ";font-size:" + subheadingBase + "px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;";
   urlLine.textContent = "www.ContraptionCart.com";
   textBlock.appendChild(urlLine);
   var designerLine = document.createElement("span");
-  designerLine.style.cssText = "font-family:" + fontSubtitle + ";font-size:" + subheadingBase + "px;color:" + (style.textColor || "#111") + ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;";
+  designerLine.style.cssText = "font-family:" + fontSubtitle + ";font-size:" + subheadingBase + "px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;";
   designerLine.textContent = "Designed by Shasa Bolton";
   textBlock.appendChild(designerLine);
   wrap.appendChild(textBlock);
@@ -927,13 +952,15 @@ function drawFront(ctx, data, assets, x, y, w, h) {
 }
 
 function drawSpine(ctx, data, assets, x, y, w, h) {
-  drawBorder(ctx, x, y, w, h, data.style.borderColor);
+  ctx.fillStyle = "#000";
+  ctx.fillRect(x, y, w, h);
+  drawBorder(ctx, x, y, w, h, "#000");
   var title = (data.content.back && data.content.back.title) || (data.content.back && data.content.back.spineTitle) || (data.content.spine && data.content.spine.title) || "";
   if (!title) return;
   ctx.save();
   ctx.translate(x + w / 2, y + h / 2);
   ctx.rotate(-Math.PI / 2);
-  ctx.fillStyle = data.style.textColor || "#111";
+  ctx.fillStyle = "#fff";
   ctx.font = fontAtSize(data.style.fontBody, Math.min(w, h) / 12);
   ctx.fillText(title, -h / 2 + Math.max(8, h * 0.04), 0);
   ctx.restore();
@@ -1042,7 +1069,9 @@ function drawBack(ctx, data, assets, x, y, w, h) {
 }
 
 function drawBottom(ctx, data, assets, x, y, w, h) {
-  drawBorder(ctx, x, y, w, h, data.style.borderColor);
+  ctx.fillStyle = "#000";
+  ctx.fillRect(x, y, w, h);
+  drawBorder(ctx, x, y, w, h, "#000");
   var pad = Math.max(4, Math.min(w, h) * 0.04);
   var logoH = h - 2 * pad;
   var gap = 8;
@@ -1059,11 +1088,14 @@ function drawBottom(ctx, data, assets, x, y, w, h) {
   var groupW = logoW + gap + textW;
   var startX = x + (w - groupW) / 2;
   var logoY = y + pad;
+  ctx.save();
+  ctx.filter = "invert(1)";
   drawImageOrPlaceholder(ctx, assets && assets.spineLogo, startX, logoY, logoW, logoH, "Logo");
+  ctx.restore();
   var lineH = subheadingSize * 1.2;
   var blockH = subheadingSize * 1.2 + 4 + subheadingSize;
   var textY = y + h / 2 - blockH / 2 + subheadingSize * 0.85;
-  ctx.fillStyle = data.style.textColor || "#111";
+  ctx.fillStyle = "#fff";
   ctx.font = fontAtSize(data.style.fontTitle, subheadingSize);
   ctx.fillText(urlStr, startX + logoW + gap, textY);
   ctx.font = fontAtSize(data.style.fontSubtitle, subheadingSize);
