@@ -113,6 +113,7 @@ class bellyBand {
 
     var pageDiv = document.createElement("div");
     pageDiv.id = "belly-band-page";
+    pageDiv._bellyBand = this;
     pageDiv.style.cssText = "box-sizing:border-box;width:" + pageWidthPx + "px;height:" + pageHeightPx + "px;padding:" + marginPx + "px;background:" + (style.backgroundColor || "#fff") + ";display:flex;flex-direction:column;gap:0;";
     pageDiv.style.setProperty("--bb-scale", "1");
 
@@ -126,7 +127,7 @@ class bellyBand {
       col.style.cssText = "display:flex;flex-direction:column;flex:0 0 auto;width:100%;";
       col.appendChild(buildSectionTop(sectionW, topH, spineTop, back, style, backH));
       col.appendChild(buildSectionFront(sectionW, frontH, front, style, assets));
-      col.appendChild(buildSectionBottom(sectionW, bottomH, spineBottom, back, style, backH));
+      col.appendChild(buildSectionBottom(sectionW, bottomH, spineBottom, back, style, backH, assets));
       col.appendChild(buildSectionBack(sectionW, backH, back, style, assets, true));
       pageDiv.appendChild(col);
     } else {
@@ -134,7 +135,7 @@ class bellyBand {
       leftCol.style.cssText = "display:flex;flex-direction:column;flex:0 0 auto;width:" + colW + "px;";
       leftCol.appendChild(buildSectionTop(sectionW, topH, spineTop, back, style, backH));
       leftCol.appendChild(buildSectionFront(sectionW, frontH, front, style, assets));
-      leftCol.appendChild(buildSectionBottom(sectionW, bottomH, spineBottom, back, style, backH));
+      leftCol.appendChild(buildSectionBottom(sectionW, bottomH, spineBottom, back, style, backH, assets));
 
       var rightCol = document.createElement("div");
       rightCol.style.cssText = "display:flex;flex-direction:column;flex:0 0 auto;width:" + colW + "px;margin-left:" + gapPx + "px;";
@@ -155,8 +156,33 @@ class bellyBand {
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
         self.fitTextToSections(pageDiv);
+        self.sizeBackSectionLogos(pageDiv);
       });
     });
+  }
+
+  sizeBackSectionLogos(pageDiv) {
+    var logoMaxPx = Math.floor(100 * 300 / 25.4);
+    var logoPad = 12;
+    var sections = pageDiv.querySelectorAll(".bb-section.bb-back");
+    for (var i = 0; i < sections.length; i++) {
+      var section = sections[i];
+      var contentWrap = section.children[1];
+      if (!contentWrap) continue;
+      var logoWrap = contentWrap.querySelector(".bb-logo-wrap");
+      if (!logoWrap) continue;
+      var logo = logoWrap.querySelector(".bb-spine-logo") || logoWrap.querySelector("img");
+      if (!logo) continue;
+      var contentRect = contentWrap.getBoundingClientRect();
+      var wrapRect = logoWrap.getBoundingClientRect();
+      var availableH = contentRect.bottom - wrapRect.top;
+      var innerH = Math.max(0, availableH - logoPad * 2);
+      var logoH = Math.min(innerH, logoMaxPx);
+      if (logoH <= 0) continue;
+      logo.style.height = logoH + "px";
+      logo.style.width = "auto";
+      if (logo.naturalWidth && logo.naturalHeight) sizeImgForExport(logo, logoMaxPx, logoH);
+    }
   }
 
   fitTextToSections(pageDiv) {
@@ -236,9 +262,13 @@ class bellyBand {
       }
       if (!c.spineTop.title) c.spineTop.title = c.back.title || (c.spine && c.spine.title);
       if (!c.spineBottom.title) c.spineBottom.title = c.back.title || (c.spine && c.spine.title);
+      d.assets = d.assets || {};
+      if (!d.assets.spineLogo) d.assets.spineLogo = "photos/logo/logosb.jpg";
       return d;
     }
     var th = selectedTheme || { headings: "Harrington", headingsWeight: "400", body: "Arial" };
+    var defaultAssets = d.assets || {};
+    if (!defaultAssets.spineLogo) defaultAssets = Object.assign({ spineLogo: "photos/logo/logosb.jpg" }, defaultAssets);
     return {
       style: {
         backgroundColor: "#ffffff",
@@ -268,7 +298,7 @@ class bellyBand {
           model: ""
         }
       },
-      assets: d.assets || {}
+      assets: defaultAssets
     };
   }
 
@@ -453,7 +483,8 @@ function buildSectionFront(w, h, front, style, assets) {
           var alphaReachesBottom = bbox.maxY >= this.naturalHeight * 0.995;
           var fadeOverlay = null;
           var fadeHeight = 0;
-          if (alphaReachesBottom && bbox.contentHeight > 0) {
+          var applyHeroFade = false;
+          if (alphaReachesBottom && bbox.contentHeight > 0 && applyHeroFade) {
             var alphaH = bbox.contentHeight * scale;
             fadeHeight = Math.max(8, 0.05 * alphaH);
             fadeOverlay = document.createElement("div");
@@ -553,6 +584,10 @@ function buildSectionFront(w, h, front, style, assets) {
   heroSpacer.className = "bb-hero-spacer";
   heroSpacer.style.cssText = "flex-shrink:0;height:0;";
   contentWrap.appendChild(heroSpacer);
+  var dividerStyle = "border:none;border-top:8px solid " + borderColor + ";margin:0.2em 0;opacity:0.5;";
+  var hrHeroDraw = document.createElement("hr");
+  hrHeroDraw.style.cssText = dividerStyle;
+  contentWrap.appendChild(hrHeroDraw);
   var imgBlock = document.createElement("div");
   imgBlock.style.cssText = "flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;margin-top:0.3em;";
   // Engineering drawing below hero: max width = border width, height fits above features (flex space)
@@ -577,18 +612,21 @@ function buildSectionFront(w, h, front, style, assets) {
   return div;
 }
 
-function buildSectionBottom(w, h, spineBottom, back, style, backH) {
-  var title = (spineBottom && spineBottom.title) || back.title || back.spineTitle || "";
-  var subheadingBase = (backH || h) / 14;
-  var fontTitle = getFontFamily(style.fontTitle);
+function buildSectionBottom(w, h, spineBottom, back, style, backH, assets) {
+  var pad = Math.max(4, w * 0.02);
+  var contentW = w - 2 * pad;
+  var barH = Math.max(12, Math.floor(contentW / 3));
   var div = document.createElement("div");
   div.className = "bb-section bb-bottom";
   div.style.cssText = "box-sizing:border-box;width:" + w + "px;height:" + h + "px;border:8px solid " + (style.borderColor || "#222") + ";padding:2%;margin-top:-8px;display:flex;align-items:center;justify-content:center;overflow:hidden;";
-  var span = document.createElement("span");
-  span.className = "bb-scalable bb-balance";
-  span.style.cssText = "color:" + (style.textColor || "#111") + ";font-family:" + fontTitle + ";font-size:calc(" + subheadingBase + "px * var(--bb-scale, 1));text-align:center;";
-  span.textContent = title;
-  div.appendChild(span);
+  var bar = document.createElement("img");
+  bar.alt = "Barcode";
+  bar.crossOrigin = "anonymous";
+  bar.style.cssText = "max-width:100%;width:" + contentW + "px;height:" + barH + "px;object-fit:contain;background:#eee;";
+  bar.src = (assets && assets.barcode) ? String(assets.barcode) : "";
+  if (bar.src) bar.onload = function () { sizeImgForExport(this, contentW, barH); };
+  if (!bar.src) bar.style.background = "#ddd";
+  div.appendChild(bar);
   return div;
 }
 
@@ -655,47 +693,69 @@ function buildSectionBack(w, h, back, style, assets, stackAfter) {
     contentWrap.appendChild(hr3);
   }
   var footer = document.createElement("div");
-  footer.style.cssText = "margin-top:auto;display:flex;flex-direction:column;gap:0;";
+  footer.style.cssText = "margin-top:auto;display:flex;flex-direction:column;gap:0;padding-bottom:" + bandH + "px;box-sizing:border-box;";
 
-  var qrRow = document.createElement("div");
-  qrRow.style.cssText = "display:flex;align-items:center;gap:0.5em;padding:0.3em 0;";
+  var contentWidthPx = w * (1 - 0.08);
+  var halfBandPx = contentWidthPx / 2;
+  var maxSizePx = Math.floor(40 * 300 / 25.4);
+  var codeSizePx = Math.min(halfBandPx, maxSizePx);
+  var logoMaxPx = Math.floor(100 * 300 / 25.4);
+
+  var qrBlock = document.createElement("div");
+  qrBlock.style.cssText = "display:flex;flex-direction:column;gap:0.25em;padding:0.3em 0;";
+
+  var imagesRow = document.createElement("div");
+  imagesRow.style.cssText = "display:flex;align-items:center;gap:0.5em;flex-shrink:0;";
   var qr = document.createElement("img");
   qr.alt = "QR";
   qr.crossOrigin = "anonymous";
-  qr.style.cssText = "width:80px;height:80px;object-fit:contain;background:#eee;flex-shrink:0;";
+  qr.style.cssText = "width:" + codeSizePx + "px;height:" + codeSizePx + "px;object-fit:contain;background:#eee;flex-shrink:0;";
   qr.src = (assets && assets.qrCode) || "";
-  if (qr.src) qr.onload = function () { sizeImgForExport(this, 80, 80); };
-  qrRow.appendChild(qr);
+  if (qr.src) qr.onload = function () { sizeImgForExport(this, codeSizePx, codeSizePx); };
+  imagesRow.appendChild(qr);
+  var smallImg = document.createElement("img");
+  smallImg.alt = "Product";
+  smallImg.crossOrigin = "anonymous";
+  smallImg.style.cssText = "width:" + codeSizePx + "px;height:" + codeSizePx + "px;object-fit:contain;background:#eee;flex-shrink:0;";
+  smallImg.src = (assets && assets.smallImage) ? String(assets.smallImage) : "";
+  if (smallImg.src && !/\.svg(\?|#|$)/i.test(smallImg.src)) smallImg.crossOrigin = "anonymous";
+  if (smallImg.src) smallImg.onload = function () { sizeImgForExport(this, codeSizePx, codeSizePx); };
+  if (!smallImg.src) smallImg.style.background = "#ddd";
+  imagesRow.appendChild(smallImg);
+  qrBlock.appendChild(imagesRow);
+
   if (back.qrLabel) {
     var qrLab = document.createElement("div");
     qrLab.className = "bb-scalable bb-balance";
     qrLab.style.cssText = "font-family:" + fontSmall + ";font-size:calc(" + tinyBase + "px * var(--bb-scale, 1));";
     qrLab.innerHTML = (back.qrLabel || "").split("\n").join("<br>");
-    qrRow.appendChild(qrLab);
+    qrBlock.appendChild(qrLab);
   }
-  footer.appendChild(qrRow);
+
+  footer.appendChild(qrBlock);
 
   var hrFooter = document.createElement("hr");
   hrFooter.style.cssText = dividerStyle;
   footer.appendChild(hrFooter);
 
-  var barRow = document.createElement("div");
-  barRow.style.cssText = "display:flex;align-items:center;gap:0.5em;padding:0.3em 0;";
-  var bar = document.createElement("img");
-  bar.alt = "Barcode";
-  bar.crossOrigin = "anonymous";
-  bar.style.cssText = "width:150px;height:50px;object-fit:contain;background:#eee;flex-shrink:0;";
-  bar.src = (assets && assets.barcode) || "";
-  if (bar.src) bar.onload = function () { sizeImgForExport(this, 150, 50); };
-  barRow.appendChild(bar);
-  if (back.model) {
-    var mod = document.createElement("div");
-    mod.className = "bb-scalable";
-    mod.style.cssText = "font-family:" + fontSmall + ";font-size:calc(" + tinyBase + "px * var(--bb-scale, 1));";
-    mod.textContent = back.model;
-    barRow.appendChild(mod);
-  }
-  footer.appendChild(barRow);
+  var logoPad = 12;
+  var logoWrap = document.createElement("div");
+  logoWrap.className = "bb-logo-wrap";
+  logoWrap.style.cssText = "flex-shrink:0;display:flex;align-items:center;justify-content:flex-start;padding:" + logoPad + "px 0;box-sizing:border-box;";
+  var logo = document.createElement("img");
+  logo.alt = "Logo";
+  logo.className = "bb-spine-logo";
+  logo.crossOrigin = "anonymous";
+  logo.style.cssText = "height:auto;width:auto;max-width:" + Math.min(contentWidthPx, logoMaxPx) + "px;object-fit:contain;display:block;background:transparent;";
+  logo.src = (assets && assets.spineLogo) ? String(assets.spineLogo) : "";
+  if (logo.src && !/\.svg(\?|#|$)/i.test(logo.src)) logo.crossOrigin = "anonymous";
+  if (logo.src) logo.onload = function () {
+    var page = document.getElementById("belly-band-page");
+    if (page && page._bellyBand && page._bellyBand.sizeBackSectionLogos) page._bellyBand.sizeBackSectionLogos(page);
+  };
+  if (!logo.src) logo.style.background = "#eee";
+  logoWrap.appendChild(logo);
+  footer.appendChild(logoWrap);
   contentWrap.appendChild(footer);
   div.appendChild(contentWrap);
   div.appendChild(buildDecorDoubleLineBand(borderColor));
@@ -895,22 +955,37 @@ function drawBack(ctx, data, assets, x, y, w, h) {
   var tinySize = h / 38;
   var lineH = contentSize * 1.3;
 
-  var qrSize = Math.min(100, w * 0.2);
-  var barcodeH = 60;
-  var footerH = qrSize + tinySize * 3 + barcodeH;
+  var contentWidthPx = contentW;
+  var halfBandPx = contentWidthPx / 2;
+  var maxSizePx = Math.floor(40 * 300 / 25.4);
+  var codeSizePx = Math.min(halfBandPx, maxSizePx);
+  var qrSize = codeSizePx;
+  var logoMaxPx = Math.floor(100 * 300 / 25.4);
+  var back = data.content.back || {};
+  var qrLabelLines = (back.qrLabel || "").split("\n").filter(Boolean).length;
+  var qrLabelH = qrLabelLines ? 6 + qrLabelLines * (tinySize + 4) : 0;
+  var footerMinH = qrSize + 6 + qrLabelH + 8;
 
   ctx.font = fontAtSize(data.style.fontBody, contentSize);
   var titleH = 0;
   var specsH = 0;
   var descriptionH = 0;
   var bulletsH = 0;
-  var back = data.content.back || {};
   if (back.title) titleH = subheadingSize * 1.3;
   if (back.specs && back.specs.length) specsH = (lineH + 2) * back.specs.length + lineH * 1.5;
   if (back.description) descriptionH = measureWrapHeight(ctx, back.description, contentW, lineH) + lineH;
   if (back.bullets && back.bullets.length) bulletsH = (lineH + 2) * back.bullets.length + lineH * 1.5;
 
   var totalContentH = titleH + specsH + descriptionH + bulletsH + lineH;
+  var availableLogoH = Math.max(0, availableH - totalContentH - footerMinH);
+  var logoH = Math.min(availableLogoH, logoMaxPx);
+  var aspect = (assets && assets.spineLogo && assets.spineLogo.naturalWidth && assets.spineLogo.naturalHeight) ? assets.spineLogo.naturalHeight / assets.spineLogo.naturalWidth : 0.4;
+  var logoW = aspect > 0 ? logoH / aspect : logoH * 2.5;
+  if (logoW > logoMaxPx) {
+    logoW = logoMaxPx;
+    logoH = logoW * aspect;
+  }
+  var footerH = footerMinH + logoH;
   var contentAreaH = availableH - footerH;
   var scale = totalContentH > contentAreaH ? Math.max(0.5, contentAreaH / totalContentH) : 1;
   if (scale < 1) {
@@ -918,7 +993,16 @@ function drawBack(ctx, data, assets, x, y, w, h) {
     contentSize *= scale;
     tinySize *= scale;
     lineH = contentSize * 1.3;
-    footerH = qrSize + tinySize * 3 + barcodeH;
+    qrLabelH = qrLabelLines ? 6 + qrLabelLines * (tinySize + 4) : 0;
+    footerMinH = qrSize + 6 + qrLabelH + 8;
+    availableLogoH = Math.max(0, availableH - totalContentH - footerMinH);
+    logoH = Math.min(availableLogoH, logoMaxPx);
+    logoW = aspect > 0 ? logoH / aspect : logoH * 2.5;
+    if (logoW > logoMaxPx) {
+      logoW = logoMaxPx;
+      logoH = logoW * aspect;
+    }
+    footerH = footerMinH + logoH;
   }
 
   var textY = contentTop;
@@ -957,26 +1041,24 @@ function drawBack(ctx, data, assets, x, y, w, h) {
 
   var footerTop = contentBottom - pad - footerH;
   drawImageOrPlaceholder(ctx, assets.qrCode, x + pad, footerTop, qrSize, qrSize, "QR");
+  drawImageOrPlaceholder(ctx, assets.smallImage, x + pad + qrSize + 8, footerTop, qrSize, qrSize, "Product");
+  var labelLeft = x + pad;
+  var labelTop = footerTop + qrSize + 6;
   ctx.font = fontAtSize(data.style.fontSmall, tinySize);
   (back.qrLabel || "").split("\n").forEach(function (line, i) {
-    ctx.fillText(line, x + pad + qrSize + 12, footerTop + tinySize + i * (tinySize + 4));
+    ctx.fillText(line, labelLeft, labelTop + tinySize + i * (tinySize + 4));
   });
 
-  drawImageOrPlaceholder(ctx, assets.barcode, x + w - pad - 180, contentBottom - pad - barcodeH - tinySize, 180, barcodeH, "Barcode");
-  ctx.fillText(back.model || "", x + w - pad - 180, contentBottom - pad - tinySize);
+  var logoY = footerTop + qrSize + 6 + qrLabelH + 8;
+  drawImageOrPlaceholder(ctx, assets.spineLogo, x + pad, logoY, logoW, logoH, "Logo");
 }
 
 function drawBottom(ctx, data, assets, x, y, w, h) {
   drawBorder(ctx, x, y, w, h, data.style.borderColor);
-  var title = (data.content.back && data.content.back.title) || (data.content.back && data.content.back.spineTitle) || (data.content.spine && data.content.spine.title) || "";
-  if (!title) return;
-  ctx.save();
-  ctx.translate(x + w / 2, y + h / 2);
-  ctx.rotate(-Math.PI / 2);
-  ctx.font = fontAtSize(data.style.fontBody, Math.min(w, h) / 12);
-  ctx.fillStyle = data.style.textColor || "#111";
-  ctx.fillText(title, -h / 2 + Math.max(8, h * 0.04), 0);
-  ctx.restore();
+  var pad = Math.max(4, Math.min(w, h) * 0.04);
+  var barW = w - 2 * pad;
+  var barH = Math.max(12, Math.floor(barW / 3));
+  drawImageOrPlaceholder(ctx, assets && assets.barcode, x + pad, y + pad, barW, barH, "Barcode");
 }
 
 function wrapText(ctx, text, x, y, maxWidth, lineHeight) {

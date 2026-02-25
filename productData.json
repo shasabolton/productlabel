@@ -261,8 +261,9 @@
       "assets": {
         "heroImage": "photos/adder/calcInHandNoBackground.png",
         "engineeringDrawing": "photos/adder/calcFullExplode.svg",
-        "qrCode": "photos/adder/adderisoFaintBG.jpg",
-        "barcode": "photos/adder/adderisoFaintBG.jpg"
+        "smallImage":"photos/adder/adderbackFaintBG.jpg",
+        "qrCode": "photos/adder/calculaterQR.png",
+        "barcode": "photos/adder/calculatorBarcodeEAN.jpeg"
       },
       "content": {
         "front": {
@@ -293,7 +294,7 @@
             "No electronics required",
             "Display-worthy finished model"
           ],
-          "qrLabel": "Watch the mechanism in action\nAssembly tips and demonstration",
+          "qrLabel": "Watch the mechanism in action. Assembly tips and demonstration",
           "model": "Model: MC-01"
         },
         "spineBottom": {
