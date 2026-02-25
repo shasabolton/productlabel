@@ -261,7 +261,8 @@
       "assets": {
         "heroImage": "photos/adder/calcInHandNoBackground.png",
         "engineeringDrawing": "photos/adder/calcFullExplode.svg",
-        "smallImage":"photos/adder/adderbackFaintBG.jpg",
+        "smallImages":["photos/adder/adderbackFaintBG.jpg",
+        "photos/adder/adderisoFaintBG.jpg"],
         "qrCode": "photos/adder/calculaterQR.png",
         "barcode": "photos/adder/calculatorBarcodeEAN.jpeg"
       },
@@ -282,11 +283,11 @@
             "Build time: 1–2 hours",
             "Difficulty: Moderate",
             "Components: Precision laser-cut wood",
-            "Tools required: None",
-            "Age: 14+",
+            "Tools required: Glue",
+            "Age: 8+",
             "Designed and manufactured in Australia"
           ],
-          "description": "Before electronic calculators existed, arithmetic was performed using ingenious mechanical devices.\n\nThis kit recreates those principles using precision laser-cut components, allowing you to assemble a fully functional mechanical calculator capable of real computation",
+          "description": "Before electronic calculators existed, arithmetic was performed using ingenious mechanical devices. This kit recreates those principles using precision laser-cut components, allowing you to assemble a fully functional mechanical calculator capable of real computation",
           "bullets": [
             "Fully functional arithmetic mechanism",
             "Educational and historically inspired",
@@ -294,7 +295,7 @@
             "No electronics required",
             "Display-worthy finished model"
           ],
-          "qrLabel": "Watch the mechanism in action. Assembly tips and demonstration",
+          "qrLabel": "Watch the assembly and demonstration video",
           "model": "Model: MC-01"
         },
         "spineBottom": {

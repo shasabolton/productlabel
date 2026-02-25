@@ -237,12 +237,12 @@ class bellyBand {
       if (!c.spineTop.title) c.spineTop.title = c.back.title || (c.spine && c.spine.title);
       if (!c.spineBottom.title) c.spineBottom.title = c.back.title || (c.spine && c.spine.title);
       d.assets = d.assets || {};
-      if (!d.assets.spineLogo) d.assets.spineLogo = "photos/logo/logosb.jpg";
+      if (!d.assets.spineLogo) d.assets.spineLogo = "photos/logo/Cart.jpg";
       return d;
     }
     var th = selectedTheme || { headings: "Harrington", headingsWeight: "400", body: "Arial" };
     var defaultAssets = d.assets || {};
-    if (!defaultAssets.spineLogo) defaultAssets = Object.assign({ spineLogo: "photos/logo/logosb.jpg" }, defaultAssets);
+    if (!defaultAssets.spineLogo) defaultAssets = Object.assign({ spineLogo: "photos/logo/Cart.jpg" }, defaultAssets);
     return {
       style: {
         backgroundColor: "#ffffff",
@@ -588,18 +588,36 @@ function buildSectionFront(w, h, front, style, assets) {
 
 function buildSectionBottom(w, h, spineBottom, back, style, backH, assets) {
   var pad = Math.max(4, w * 0.02);
-  var contentW = w - 2 * pad;
+  var innerH = h - 2 * pad;
+  var gap = 8;
+  var subheadingBase = h / 4;
+  var fontTitle = getFontFamily(style.fontTitle);
+  var fontSubtitle = getFontFamily(style.fontSubtitle);
   var div = document.createElement("div");
   div.className = "bb-section bb-bottom";
   div.style.cssText = "box-sizing:border-box;width:" + w + "px;height:" + h + "px;border:8px solid " + (style.borderColor || "#222") + ";padding:2%;margin-top:-8px;display:flex;align-items:center;justify-content:center;overflow:hidden;";
+  var wrap = document.createElement("div");
+  wrap.style.cssText = "display:flex;flex-direction:row;align-items:center;justify-content:center;gap:0.5em;flex-wrap:nowrap;max-width:100%;";
   var logo = document.createElement("img");
   logo.alt = "Logo";
   logo.crossOrigin = "anonymous";
-  logo.style.cssText = "max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;background:transparent;";
+  logo.style.cssText = "height:" + innerH + "px;width:auto;max-width:50%;object-fit:contain;display:block;background:transparent;flex-shrink:0;";
   logo.src = (assets && assets.spineLogo) ? String(assets.spineLogo) : "";
   if (logo.src && !/\.svg(\?|#|$)/i.test(logo.src)) logo.crossOrigin = "anonymous";
   if (!logo.src) logo.style.background = "#eee";
-  div.appendChild(logo);
+  wrap.appendChild(logo);
+  var textBlock = document.createElement("div");
+  textBlock.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.15em;flex-shrink:1;min-width:0;text-align:center;";
+  var urlLine = document.createElement("span");
+  urlLine.style.cssText = "font-family:" + fontTitle + ";font-size:" + subheadingBase + "px;color:" + (style.textColor || "#111") + ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;";
+  urlLine.textContent = "www.ContraptionCart.com";
+  textBlock.appendChild(urlLine);
+  var designerLine = document.createElement("span");
+  designerLine.style.cssText = "font-family:" + fontSubtitle + ";font-size:" + subheadingBase + "px;color:" + (style.textColor || "#111") + ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;";
+  designerLine.textContent = "Designed by Shasa Bolton";
+  textBlock.appendChild(designerLine);
+  wrap.appendChild(textBlock);
+  div.appendChild(wrap);
   return div;
 }
 
@@ -619,7 +637,7 @@ function buildSectionBack(w, h, back, style, assets, stackAfter) {
   div.style.cssText = "box-sizing:border-box;width:" + w + "px;height:" + h + "px;border:8px solid " + borderColor + ";padding:12px 0;" + (stackAfter ? "margin-top:-8px;" : "") + "display:flex;flex-direction:column;overflow:hidden;color:" + (style.textColor || "#111") + ";";
   div.appendChild(buildDecorDoubleLineBand(borderColor));
   var contentWrap = document.createElement("div");
-  contentWrap.style.cssText = "flex:1;min-height:0;display:flex;flex-direction:column;padding:" + bandH + "px 4% " + bandH + "px 4%;box-sizing:border-box;overflow:hidden;";
+  contentWrap.style.cssText = "flex:1;min-height:0;display:flex;flex-direction:column;padding:" + bandH + "px 4% 0 4%;box-sizing:border-box;overflow:hidden;";
   if (back.title || back.spineTitle) {
     var st = document.createElement("h2");
     st.className = "bb-scalable bb-balance";
@@ -665,20 +683,42 @@ function buildSectionBack(w, h, back, style, assets, stackAfter) {
     hr3.style.cssText = dividerStyle;
     contentWrap.appendChild(hr3);
   }
-  var footer = document.createElement("div");
-  footer.style.cssText = "margin-top:auto;display:flex;flex-direction:column;gap:0;padding-bottom:" + bandH + "px;box-sizing:border-box;";
-
   var contentWidthPx = w * (1 - 0.08);
   var gap = 8;
   var barMinPx = Math.floor(30 * 300 / 25.4);
   var barW = Math.max(barMinPx, Math.floor((contentWidthPx - gap) / 2));
   var qrSize = Math.max(24, contentWidthPx - gap - barW);
-  var hrFooter = document.createElement("hr");
-  hrFooter.style.cssText = dividerStyle;
-  footer.appendChild(hrFooter);
+
+  var smallImagesList = (assets && assets.smallImages && Array.isArray(assets.smallImages)) ? assets.smallImages.slice(0, 2) : [];
+  if (smallImagesList.length >= 2) {
+    var imgGap = 8;
+    var smallImagesWrap = document.createElement("div");
+    smallImagesWrap.style.cssText = "flex:1;min-height:0;display:flex;flex-direction:row;gap:" + imgGap + "px;width:100%;margin:0.25em 0;box-sizing:border-box;";
+    for (var si = 0; si < 2; si++) {
+      var simg = document.createElement("img");
+      simg.alt = "Product";
+      simg.style.cssText = "flex:1;min-width:0;width:auto;height:100%;object-fit:contain;display:block;background:transparent;";
+      simg.src = smallImagesList[si];
+      if (simg.src && !/\.svg(\?|#|$)/i.test(simg.src)) simg.crossOrigin = "anonymous";
+      if (!simg.src) simg.style.background = "#eee";
+      smallImagesWrap.appendChild(simg);
+    }
+    contentWrap.appendChild(smallImagesWrap);
+  }
+
+  var footer = document.createElement("div");
+  footer.style.cssText = "margin-top:auto;flex-shrink:0;display:flex;flex-direction:column;gap:0;box-sizing:border-box;";
+
+  if (back.qrLabel) {
+    var qrLab = document.createElement("div");
+    qrLab.className = "bb-scalable bb-balance";
+    qrLab.style.cssText = "font-family:" + fontBody + ";font-size:calc(" + contentBase + "px * var(--bb-scale, 1));margin-bottom:0.25em;text-align:justify;";
+    qrLab.innerHTML = (back.qrLabel || "").split("\n").join("<br>");
+    footer.appendChild(qrLab);
+  }
 
   var codesRow = document.createElement("div");
-  codesRow.style.cssText = "display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:" + gap + "px;padding:0.3em 0;width:100%;min-width:0;box-sizing:border-box;";
+  codesRow.style.cssText = "display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:" + gap + "px;padding:0;width:100%;min-width:0;box-sizing:border-box;";
   var qr = document.createElement("img");
   qr.alt = "QR";
   qr.crossOrigin = "anonymous";
@@ -696,14 +736,6 @@ function buildSectionBack(w, h, back, style, assets, stackAfter) {
   codesRow.appendChild(bar);
   footer.appendChild(codesRow);
 
-  if (back.qrLabel) {
-    var qrLab = document.createElement("div");
-    qrLab.className = "bb-scalable bb-balance";
-    qrLab.style.cssText = "font-family:" + fontSmall + ";font-size:calc(" + tinyBase + "px * var(--bb-scale, 1));padding-top:0.25em;";
-    qrLab.innerHTML = (back.qrLabel || "").split("\n").join("<br>");
-    footer.appendChild(qrLab);
-  }
-
   contentWrap.appendChild(footer);
   div.appendChild(contentWrap);
   div.appendChild(buildDecorDoubleLineBand(borderColor));
@@ -717,8 +749,12 @@ function loadAssets(paths) {
   return new Promise(function (resolve) {
     if (keys.length === 0) { resolve({}); return; }
     keys.forEach(function (key) {
-      loadImage(paths[key]).then(function (img) {
-        result[key] = img;
+      var val = paths[key];
+      var load = Array.isArray(val)
+        ? Promise.all(val.map(function (src) { return loadImage(src); }))
+        : loadImage(val).then(function (img) { return [img]; });
+      load.then(function (imgs) {
+        result[key] = Array.isArray(val) ? imgs : imgs[0];
         done++;
         if (done === keys.length) resolve(result);
       });
@@ -909,20 +945,21 @@ function drawBack(ctx, data, assets, x, y, w, h) {
   var qrSize = Math.max(24, contentW - gap - barW);
   var back = data.content.back || {};
   var qrLabelLines = (back.qrLabel || "").split("\n").filter(Boolean).length;
-  var qrLabelH = qrLabelLines ? 6 + qrLabelLines * (tinySize + 4) : 0;
-  var footerH = qrSize + 6 + qrLabelH + 8;
+  var qrLabelH = qrLabelLines ? 6 + qrLabelLines * (contentSize * 1.3 + 2) : 0;
+  var footerH = qrLabelH + 6 + qrSize;
 
   ctx.font = fontAtSize(data.style.fontBody, contentSize);
   var titleH = 0;
   var specsH = 0;
   var descriptionH = 0;
   var bulletsH = 0;
+  var smallImagesH = (assets.smallImages && assets.smallImages.length >= 2) ? Math.min(80, Math.floor(contentW * 0.2)) + lineH : 0;
   if (back.title) titleH = subheadingSize * 1.3;
   if (back.specs && back.specs.length) specsH = (lineH + 2) * back.specs.length + lineH * 1.5;
   if (back.description) descriptionH = measureWrapHeight(ctx, back.description, contentW, lineH) + lineH;
   if (back.bullets && back.bullets.length) bulletsH = (lineH + 2) * back.bullets.length + lineH * 1.5;
 
-  var totalContentH = titleH + specsH + descriptionH + bulletsH + lineH;
+  var totalContentH = titleH + specsH + descriptionH + bulletsH + lineH + smallImagesH;
   var contentAreaH = availableH - footerH;
   var scale = totalContentH > contentAreaH ? Math.max(0.5, contentAreaH / totalContentH) : 1;
   if (scale < 1) {
@@ -930,8 +967,8 @@ function drawBack(ctx, data, assets, x, y, w, h) {
     contentSize *= scale;
     tinySize *= scale;
     lineH = contentSize * 1.3;
-    qrLabelH = qrLabelLines ? 6 + qrLabelLines * (tinySize + 4) : 0;
-    footerH = qrSize + 6 + qrLabelH + 8;
+    qrLabelH = qrLabelLines ? 6 + qrLabelLines * (contentSize * 1.3 + 2) : 0;
+    footerH = qrLabelH + 6 + qrSize;
   }
 
   var textY = contentTop;
@@ -968,23 +1005,53 @@ function drawBack(ctx, data, assets, x, y, w, h) {
   drawHorizontalLine(ctx, x + pad, textY, contentW, data.style.borderColor);
   textY += lineH;
 
+  var smallImgs = assets.smallImages;
+  if (smallImgs && smallImgs.length >= 2) {
+    var smallImgGap = 8;
+    var smallImgW = Math.floor((contentW - smallImgGap) / 2);
+    var smallImgH = Math.min(80, Math.floor(contentW * 0.2));
+    drawImageOrPlaceholder(ctx, smallImgs[0], x + pad, textY, smallImgW, smallImgH, "Product");
+    drawImageOrPlaceholder(ctx, smallImgs[1], x + pad + smallImgW + smallImgGap, textY, smallImgW, smallImgH, "Product");
+    textY += smallImgH + lineH;
+  }
+
   var footerTop = contentBottom - pad - footerH;
-  drawImageOrPlaceholder(ctx, assets.qrCode, x + pad, footerTop, qrSize, qrSize, "QR");
-  drawImageOrPlaceholder(ctx, assets.barcode, x + pad + qrSize + gap, footerTop, barW, qrSize, "Barcode");
-  var labelLeft = x + pad;
-  var labelTop = footerTop + qrSize + 6;
-  ctx.font = fontAtSize(data.style.fontSmall, tinySize);
+  ctx.font = fontAtSize(data.style.fontBody, contentSize);
   (back.qrLabel || "").split("\n").forEach(function (line, i) {
-    ctx.fillText(line, labelLeft, labelTop + tinySize + i * (tinySize + 4));
+    ctx.fillText(line, x + pad, footerTop + contentSize + i * (contentSize * 1.3 + 2));
   });
+  var codesTop = footerTop + qrLabelH + 6;
+  drawImageOrPlaceholder(ctx, assets.qrCode, x + pad, codesTop, qrSize, qrSize, "QR");
+  drawImageOrPlaceholder(ctx, assets.barcode, x + pad + qrSize + gap, codesTop, barW, qrSize, "Barcode");
 }
 
 function drawBottom(ctx, data, assets, x, y, w, h) {
   drawBorder(ctx, x, y, w, h, data.style.borderColor);
   var pad = Math.max(4, Math.min(w, h) * 0.04);
-  var logoW = w - 2 * pad;
   var logoH = h - 2 * pad;
-  drawImageOrPlaceholder(ctx, assets && assets.spineLogo, x + pad, y + pad, logoW, logoH, "Logo");
+  var gap = 8;
+  var subheadingSize = h / 4;
+  var urlStr = "www.ContraptionCart.com";
+  var designerStr = "Designed by Shasa Bolton";
+  ctx.font = fontAtSize(data.style.fontTitle, subheadingSize);
+  var urlW = ctx.measureText(urlStr).width;
+  ctx.font = fontAtSize(data.style.fontSubtitle, subheadingSize);
+  var designerW = ctx.measureText(designerStr).width;
+  var textW = Math.max(urlW, designerW);
+  var logoW = Math.min(logoH * 1.5, w - 2 * pad - gap - textW);
+  if (logoW < 20) logoW = logoH;
+  var groupW = logoW + gap + textW;
+  var startX = x + (w - groupW) / 2;
+  var logoY = y + pad;
+  drawImageOrPlaceholder(ctx, assets && assets.spineLogo, startX, logoY, logoW, logoH, "Logo");
+  var lineH = subheadingSize * 1.2;
+  var blockH = subheadingSize * 1.2 + 4 + subheadingSize;
+  var textY = y + h / 2 - blockH / 2 + subheadingSize * 0.85;
+  ctx.fillStyle = data.style.textColor || "#111";
+  ctx.font = fontAtSize(data.style.fontTitle, subheadingSize);
+  ctx.fillText(urlStr, startX + logoW + gap, textY);
+  ctx.font = fontAtSize(data.style.fontSubtitle, subheadingSize);
+  ctx.fillText(designerStr, startX + logoW + gap, textY + lineH);
 }
 
 function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
