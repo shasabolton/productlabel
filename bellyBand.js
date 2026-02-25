@@ -113,7 +113,6 @@ class bellyBand {
 
     var pageDiv = document.createElement("div");
     pageDiv.id = "belly-band-page";
-    pageDiv._bellyBand = this;
     pageDiv.style.cssText = "box-sizing:border-box;width:" + pageWidthPx + "px;height:" + pageHeightPx + "px;padding:" + marginPx + "px;background:" + (style.backgroundColor || "#fff") + ";display:flex;flex-direction:column;gap:0;";
     pageDiv.style.setProperty("--bb-scale", "1");
 
@@ -156,33 +155,8 @@ class bellyBand {
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
         self.fitTextToSections(pageDiv);
-        self.sizeBackSectionLogos(pageDiv);
       });
     });
-  }
-
-  sizeBackSectionLogos(pageDiv) {
-    var logoMaxPx = Math.floor(100 * 300 / 25.4);
-    var logoPad = 12;
-    var sections = pageDiv.querySelectorAll(".bb-section.bb-back");
-    for (var i = 0; i < sections.length; i++) {
-      var section = sections[i];
-      var contentWrap = section.children[1];
-      if (!contentWrap) continue;
-      var logoWrap = contentWrap.querySelector(".bb-logo-wrap");
-      if (!logoWrap) continue;
-      var logo = logoWrap.querySelector(".bb-spine-logo") || logoWrap.querySelector("img");
-      if (!logo) continue;
-      var contentRect = contentWrap.getBoundingClientRect();
-      var wrapRect = logoWrap.getBoundingClientRect();
-      var availableH = contentRect.bottom - wrapRect.top;
-      var innerH = Math.max(0, availableH - logoPad * 2);
-      var logoH = Math.min(innerH, logoMaxPx);
-      if (logoH <= 0) continue;
-      logo.style.height = logoH + "px";
-      logo.style.width = "auto";
-      if (logo.naturalWidth && logo.naturalHeight) sizeImgForExport(logo, logoMaxPx, logoH);
-    }
   }
 
   fitTextToSections(pageDiv) {
@@ -615,18 +589,17 @@ function buildSectionFront(w, h, front, style, assets) {
 function buildSectionBottom(w, h, spineBottom, back, style, backH, assets) {
   var pad = Math.max(4, w * 0.02);
   var contentW = w - 2 * pad;
-  var barH = Math.max(12, Math.floor(contentW / 3));
   var div = document.createElement("div");
   div.className = "bb-section bb-bottom";
   div.style.cssText = "box-sizing:border-box;width:" + w + "px;height:" + h + "px;border:8px solid " + (style.borderColor || "#222") + ";padding:2%;margin-top:-8px;display:flex;align-items:center;justify-content:center;overflow:hidden;";
-  var bar = document.createElement("img");
-  bar.alt = "Barcode";
-  bar.crossOrigin = "anonymous";
-  bar.style.cssText = "max-width:100%;width:" + contentW + "px;height:" + barH + "px;object-fit:contain;background:#eee;";
-  bar.src = (assets && assets.barcode) ? String(assets.barcode) : "";
-  if (bar.src) bar.onload = function () { sizeImgForExport(this, contentW, barH); };
-  if (!bar.src) bar.style.background = "#ddd";
-  div.appendChild(bar);
+  var logo = document.createElement("img");
+  logo.alt = "Logo";
+  logo.crossOrigin = "anonymous";
+  logo.style.cssText = "max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;background:transparent;";
+  logo.src = (assets && assets.spineLogo) ? String(assets.spineLogo) : "";
+  if (logo.src && !/\.svg(\?|#|$)/i.test(logo.src)) logo.crossOrigin = "anonymous";
+  if (!logo.src) logo.style.background = "#eee";
+  div.appendChild(logo);
   return div;
 }
 
@@ -696,66 +669,41 @@ function buildSectionBack(w, h, back, style, assets, stackAfter) {
   footer.style.cssText = "margin-top:auto;display:flex;flex-direction:column;gap:0;padding-bottom:" + bandH + "px;box-sizing:border-box;";
 
   var contentWidthPx = w * (1 - 0.08);
-  var halfBandPx = contentWidthPx / 2;
-  var maxSizePx = Math.floor(40 * 300 / 25.4);
-  var codeSizePx = Math.min(halfBandPx, maxSizePx);
-  var logoMaxPx = Math.floor(100 * 300 / 25.4);
-
-  var qrBlock = document.createElement("div");
-  qrBlock.style.cssText = "display:flex;flex-direction:column;gap:0.25em;padding:0.3em 0;";
-
-  var imagesRow = document.createElement("div");
-  imagesRow.style.cssText = "display:flex;align-items:center;gap:0.5em;flex-shrink:0;";
-  var qr = document.createElement("img");
-  qr.alt = "QR";
-  qr.crossOrigin = "anonymous";
-  qr.style.cssText = "width:" + codeSizePx + "px;height:" + codeSizePx + "px;object-fit:contain;background:#eee;flex-shrink:0;";
-  qr.src = (assets && assets.qrCode) || "";
-  if (qr.src) qr.onload = function () { sizeImgForExport(this, codeSizePx, codeSizePx); };
-  imagesRow.appendChild(qr);
-  var smallImg = document.createElement("img");
-  smallImg.alt = "Product";
-  smallImg.crossOrigin = "anonymous";
-  smallImg.style.cssText = "width:" + codeSizePx + "px;height:" + codeSizePx + "px;object-fit:contain;background:#eee;flex-shrink:0;";
-  smallImg.src = (assets && assets.smallImage) ? String(assets.smallImage) : "";
-  if (smallImg.src && !/\.svg(\?|#|$)/i.test(smallImg.src)) smallImg.crossOrigin = "anonymous";
-  if (smallImg.src) smallImg.onload = function () { sizeImgForExport(this, codeSizePx, codeSizePx); };
-  if (!smallImg.src) smallImg.style.background = "#ddd";
-  imagesRow.appendChild(smallImg);
-  qrBlock.appendChild(imagesRow);
-
-  if (back.qrLabel) {
-    var qrLab = document.createElement("div");
-    qrLab.className = "bb-scalable bb-balance";
-    qrLab.style.cssText = "font-family:" + fontSmall + ";font-size:calc(" + tinyBase + "px * var(--bb-scale, 1));";
-    qrLab.innerHTML = (back.qrLabel || "").split("\n").join("<br>");
-    qrBlock.appendChild(qrLab);
-  }
-
-  footer.appendChild(qrBlock);
-
+  var gap = 8;
+  var barMinPx = Math.floor(30 * 300 / 25.4);
+  var barW = Math.max(barMinPx, Math.floor((contentWidthPx - gap) / 2));
+  var qrSize = Math.max(24, contentWidthPx - gap - barW);
   var hrFooter = document.createElement("hr");
   hrFooter.style.cssText = dividerStyle;
   footer.appendChild(hrFooter);
 
-  var logoPad = 12;
-  var logoWrap = document.createElement("div");
-  logoWrap.className = "bb-logo-wrap";
-  logoWrap.style.cssText = "flex-shrink:0;display:flex;align-items:center;justify-content:flex-start;padding:" + logoPad + "px 0;box-sizing:border-box;";
-  var logo = document.createElement("img");
-  logo.alt = "Logo";
-  logo.className = "bb-spine-logo";
-  logo.crossOrigin = "anonymous";
-  logo.style.cssText = "height:auto;width:auto;max-width:" + Math.min(contentWidthPx, logoMaxPx) + "px;object-fit:contain;display:block;background:transparent;";
-  logo.src = (assets && assets.spineLogo) ? String(assets.spineLogo) : "";
-  if (logo.src && !/\.svg(\?|#|$)/i.test(logo.src)) logo.crossOrigin = "anonymous";
-  if (logo.src) logo.onload = function () {
-    var page = document.getElementById("belly-band-page");
-    if (page && page._bellyBand && page._bellyBand.sizeBackSectionLogos) page._bellyBand.sizeBackSectionLogos(page);
-  };
-  if (!logo.src) logo.style.background = "#eee";
-  logoWrap.appendChild(logo);
-  footer.appendChild(logoWrap);
+  var codesRow = document.createElement("div");
+  codesRow.style.cssText = "display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:" + gap + "px;padding:0.3em 0;width:100%;min-width:0;box-sizing:border-box;";
+  var qr = document.createElement("img");
+  qr.alt = "QR";
+  qr.crossOrigin = "anonymous";
+  qr.style.cssText = "width:" + qrSize + "px;height:" + qrSize + "px;min-width:0;object-fit:contain;background:#eee;flex-shrink:1;display:block;";
+  qr.src = (assets && assets.qrCode) || "";
+  if (qr.src) qr.onload = function () { sizeImgForExport(this, qrSize, qrSize); };
+  codesRow.appendChild(qr);
+  var bar = document.createElement("img");
+  bar.alt = "Barcode";
+  bar.crossOrigin = "anonymous";
+  bar.style.cssText = "height:" + qrSize + "px;width:" + barW + "px;min-width:" + barMinPx + "px;max-width:" + barW + "px;object-fit:contain;background:#eee;flex-shrink:0;display:block;";
+  bar.src = (assets && assets.barcode) || "";
+  if (bar.src) bar.onload = function () { sizeImgForExport(this, barW, qrSize); };
+  if (!bar.src) bar.style.background = "#ddd";
+  codesRow.appendChild(bar);
+  footer.appendChild(codesRow);
+
+  if (back.qrLabel) {
+    var qrLab = document.createElement("div");
+    qrLab.className = "bb-scalable bb-balance";
+    qrLab.style.cssText = "font-family:" + fontSmall + ";font-size:calc(" + tinyBase + "px * var(--bb-scale, 1));padding-top:0.25em;";
+    qrLab.innerHTML = (back.qrLabel || "").split("\n").join("<br>");
+    footer.appendChild(qrLab);
+  }
+
   contentWrap.appendChild(footer);
   div.appendChild(contentWrap);
   div.appendChild(buildDecorDoubleLineBand(borderColor));
@@ -955,16 +903,14 @@ function drawBack(ctx, data, assets, x, y, w, h) {
   var tinySize = h / 38;
   var lineH = contentSize * 1.3;
 
-  var contentWidthPx = contentW;
-  var halfBandPx = contentWidthPx / 2;
-  var maxSizePx = Math.floor(40 * 300 / 25.4);
-  var codeSizePx = Math.min(halfBandPx, maxSizePx);
-  var qrSize = codeSizePx;
-  var logoMaxPx = Math.floor(100 * 300 / 25.4);
+  var gap = 8;
+  var barMinPx = Math.floor(30 * 300 / 25.4);
+  var barW = Math.max(barMinPx, Math.floor((contentW - gap) / 2));
+  var qrSize = Math.max(24, contentW - gap - barW);
   var back = data.content.back || {};
   var qrLabelLines = (back.qrLabel || "").split("\n").filter(Boolean).length;
   var qrLabelH = qrLabelLines ? 6 + qrLabelLines * (tinySize + 4) : 0;
-  var footerMinH = qrSize + 6 + qrLabelH + 8;
+  var footerH = qrSize + 6 + qrLabelH + 8;
 
   ctx.font = fontAtSize(data.style.fontBody, contentSize);
   var titleH = 0;
@@ -977,15 +923,6 @@ function drawBack(ctx, data, assets, x, y, w, h) {
   if (back.bullets && back.bullets.length) bulletsH = (lineH + 2) * back.bullets.length + lineH * 1.5;
 
   var totalContentH = titleH + specsH + descriptionH + bulletsH + lineH;
-  var availableLogoH = Math.max(0, availableH - totalContentH - footerMinH);
-  var logoH = Math.min(availableLogoH, logoMaxPx);
-  var aspect = (assets && assets.spineLogo && assets.spineLogo.naturalWidth && assets.spineLogo.naturalHeight) ? assets.spineLogo.naturalHeight / assets.spineLogo.naturalWidth : 0.4;
-  var logoW = aspect > 0 ? logoH / aspect : logoH * 2.5;
-  if (logoW > logoMaxPx) {
-    logoW = logoMaxPx;
-    logoH = logoW * aspect;
-  }
-  var footerH = footerMinH + logoH;
   var contentAreaH = availableH - footerH;
   var scale = totalContentH > contentAreaH ? Math.max(0.5, contentAreaH / totalContentH) : 1;
   if (scale < 1) {
@@ -994,15 +931,7 @@ function drawBack(ctx, data, assets, x, y, w, h) {
     tinySize *= scale;
     lineH = contentSize * 1.3;
     qrLabelH = qrLabelLines ? 6 + qrLabelLines * (tinySize + 4) : 0;
-    footerMinH = qrSize + 6 + qrLabelH + 8;
-    availableLogoH = Math.max(0, availableH - totalContentH - footerMinH);
-    logoH = Math.min(availableLogoH, logoMaxPx);
-    logoW = aspect > 0 ? logoH / aspect : logoH * 2.5;
-    if (logoW > logoMaxPx) {
-      logoW = logoMaxPx;
-      logoH = logoW * aspect;
-    }
-    footerH = footerMinH + logoH;
+    footerH = qrSize + 6 + qrLabelH + 8;
   }
 
   var textY = contentTop;
@@ -1041,24 +970,21 @@ function drawBack(ctx, data, assets, x, y, w, h) {
 
   var footerTop = contentBottom - pad - footerH;
   drawImageOrPlaceholder(ctx, assets.qrCode, x + pad, footerTop, qrSize, qrSize, "QR");
-  drawImageOrPlaceholder(ctx, assets.smallImage, x + pad + qrSize + 8, footerTop, qrSize, qrSize, "Product");
+  drawImageOrPlaceholder(ctx, assets.barcode, x + pad + qrSize + gap, footerTop, barW, qrSize, "Barcode");
   var labelLeft = x + pad;
   var labelTop = footerTop + qrSize + 6;
   ctx.font = fontAtSize(data.style.fontSmall, tinySize);
   (back.qrLabel || "").split("\n").forEach(function (line, i) {
     ctx.fillText(line, labelLeft, labelTop + tinySize + i * (tinySize + 4));
   });
-
-  var logoY = footerTop + qrSize + 6 + qrLabelH + 8;
-  drawImageOrPlaceholder(ctx, assets.spineLogo, x + pad, logoY, logoW, logoH, "Logo");
 }
 
 function drawBottom(ctx, data, assets, x, y, w, h) {
   drawBorder(ctx, x, y, w, h, data.style.borderColor);
   var pad = Math.max(4, Math.min(w, h) * 0.04);
-  var barW = w - 2 * pad;
-  var barH = Math.max(12, Math.floor(barW / 3));
-  drawImageOrPlaceholder(ctx, assets && assets.barcode, x + pad, y + pad, barW, barH, "Barcode");
+  var logoW = w - 2 * pad;
+  var logoH = h - 2 * pad;
+  drawImageOrPlaceholder(ctx, assets && assets.spineLogo, x + pad, y + pad, logoW, logoH, "Logo");
 }
 
 function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
