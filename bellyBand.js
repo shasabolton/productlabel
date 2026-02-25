@@ -1,7 +1,7 @@
 class bellyBand {
   constructor(data) {
     this.labelData = data;
-    this.boxSize = { width: 310, height: 220, depth: 20 };
+    this.boxSize = { width: 310, height: 222, depth: 20 };
   }
   // --- Original canvas render (commented out) ---
   // render() {
@@ -113,7 +113,7 @@ class bellyBand {
 
     var pageDiv = document.createElement("div");
     pageDiv.id = "belly-band-page";
-    pageDiv.style.cssText = "box-sizing:border-box;width:" + pageWidthPx + "px;height:" + pageHeightPx + "px;padding:" + marginPx + "px;background:" + (style.backgroundColor || "#fff") + ";display:flex;flex-direction:column;gap:0;";
+    pageDiv.style.cssText = "box-sizing:border-box;width:" + pageWidthPx + "px;height:" + pageHeightPx + "px;padding:" + marginPx + "px;background:" + (style.backgroundColor || "#fff") + ";display:flex;flex-direction:column;justify-content:center;gap:0;position:relative;";
     pageDiv.style.setProperty("--bb-scale", "1");
 
     var vertical = availH >= totalH;
@@ -149,6 +149,16 @@ class bellyBand {
       row.appendChild(rightCol);
       pageDiv.appendChild(row);
     }
+
+    var cutLineH = 2 * marginPx;
+    var cutLineTop = document.createElement("div");
+    cutLineTop.setAttribute("aria-hidden", "true");
+    cutLineTop.style.cssText = "position:absolute;left:50%;top:0;width:1px;height:" + cutLineH + "px;margin-left:-1px;background:#999;pointer-events:none;";
+    pageDiv.appendChild(cutLineTop);
+    var cutLineBottom = document.createElement("div");
+    cutLineBottom.setAttribute("aria-hidden", "true");
+    cutLineBottom.style.cssText = "position:absolute;left:50%;bottom:0;width:1px;height:" + cutLineH + "px;margin-left:-1px;background:#999;pointer-events:none;";
+    pageDiv.appendChild(cutLineBottom);
 
     container.appendChild(pageDiv);
     var self = this;
