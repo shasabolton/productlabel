@@ -471,7 +471,7 @@ function buildSectionFront(w, h, front, style, assets) {
   var bandH = 12 + 8 + 12 + 8;
   var sectionContentW = w - 16;
   var oneMargin = sectionContentW * 0.04;
-  var targetAlphaW = sectionContentW + oneMargin;
+  var targetAlphaW = sectionContentW + 1.5 * oneMargin;
   var sectionBg = style.backgroundColor || "#fff";
   var hero = document.createElement("img");
   hero.alt = "Hero";
@@ -486,7 +486,7 @@ function buildSectionFront(w, h, front, style, assets) {
           var scale = targetAlphaW / bbox.contentWidth;
           var imgW = this.naturalWidth * scale;
           var imgH = this.naturalHeight * scale;
-          var heroLeft = -bbox.minX * scale - oneMargin / 2;
+          var heroLeft = -bbox.minX * scale - (1.5 * oneMargin) / 2;
           this.style.width = imgW + "px";
           this.style.height = imgH + "px";
           this.style.left = heroLeft + "px";
@@ -642,9 +642,27 @@ function buildSectionBottom(w, h, spineBottom, back, style, backH, assets) {
   var logo = document.createElement("img");
   logo.alt = "Logo";
   logo.crossOrigin = "anonymous";
-  logo.style.cssText = "height:" + innerH + "px;width:auto;max-width:50%;object-fit:contain;display:block;background:transparent;flex-shrink:0;filter:invert(1);";
-  logo.src = (assets && assets.spineLogo) ? String(assets.spineLogo) : "";
-  if (logo.src && !/\.svg(\?|#|$)/i.test(logo.src)) logo.crossOrigin = "anonymous";
+  logo.style.cssText = "height:" + innerH + "px;width:auto;max-width:50%;object-fit:contain;display:block;background:transparent;flex-shrink:0;";
+  var spineLogoUrl = (assets && assets.spineLogo) ? String(assets.spineLogo) : "";
+  logo.src = spineLogoUrl;
+  if (logo.src && !/\.svg(\?|#|$)/i.test(logo.src)) {
+    logo.crossOrigin = "anonymous";
+    logo.onload = function () {
+      if (this.src && this.src.indexOf("data:") === 0) return;
+      try {
+        var c = document.createElement("canvas");
+        c.width = this.naturalWidth;
+        c.height = this.naturalHeight;
+        var ctx = c.getContext("2d");
+        ctx.filter = "invert(1)";
+        ctx.drawImage(this, 0, 0);
+        var dataUrl = c.toDataURL("image/png");
+        this.src = dataUrl;
+      } catch (e) {
+        this.style.filter = "invert(1)";
+      }
+    };
+  }
   if (!logo.src) logo.style.background = "#eee";
   wrap.appendChild(logo);
   var textBlock = document.createElement("div");

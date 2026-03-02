@@ -48,11 +48,11 @@
     {
       "title": "Illusionist Box",
       "description": "Assemble the parts. Secret opening sequence",
-      "mainImageUrl": "https://cdn.glitch.global/7fd6a192-1c60-4d81-85d5-3cb9b8f21acc/84c90124-58d6-403d-9d26-3c94cb6a60fc.image.png?v=1708295048211",
+      "mainImageUrl": "photos/illBox/illOpen.webp",
       "smallImages": [
-        "https://cdn.glitch.global/7fd6a192-1c60-4d81-85d5-3cb9b8f21acc/20220114_103238.jpg?v=1713307570890",
-        "https://cdn.glitch.global/7fd6a192-1c60-4d81-85d5-3cb9b8f21acc/31a97ee4-4c59-455c-b1d0-537a942f4417.image.png?v=1708295321637",
-        "https://cdn.glitch.global/7fd6a192-1c60-4d81-85d5-3cb9b8f21acc/20220114_103105.jpg?v=1713307530528"
+        "photos/illBox/illShutOval.webp",
+        "photos/illBox/illHeartInHand.avif",
+        "photos/illBox/illPartsSheet.webp"
       ]
     },
     {
