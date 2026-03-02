@@ -1,4 +1,4 @@
-﻿var activeLabel;
+var activeLabel;
 var themes = [];
 var selectedTheme = null;
 
@@ -11,14 +11,16 @@ var pages = {
   "A4 Portrait": { width: 210, height: 297, margin: 5, printSize: "A4 portrait" },
   "A4 Landscape": { width: 297, height: 210, margin: 5, printSize: "A4 landscape" },
   "A5 Portrait": { width: 148, height: 210, margin: 5, printSize: "A5 portrait" },
-  "A5 Landscape": { width: 210, height: 148, margin: 5, printSize: "A5 landscape" }
+  "A5 Landscape": { width: 210, height: 148, margin: 5, printSize: "A5 landscape" },
+  "105mm wide sleave": { width: 105, height: 500, margin: 5, printSize: "100 wide sleave" }
 };
 
 // Template classes - each has constructor(data) and render()
 // bellyBand from bellyBand.js, productLable from productLabel.js
 var templates = [
   { name: "Product Label", TemplateClass: productLable },
-  { name: "Belly Band", TemplateClass: bellyBand }
+  { name: "Belly Band", TemplateClass: bellyBand },
+  { name: "Sleave", TemplateClass: Sleave }
 ];
 
 
@@ -258,6 +260,20 @@ for (var t = 0; t < templates.length; t++) {
   opt.text = templates[t].name;
   opt.value = t;
   templateSelect.add(opt);
+}
+
+// Populate page dropdown from pages (any page added to pages appears here)
+var pageSizeSelect = document.getElementById("pageSizeSelect");
+pageSizeSelect.innerHTML = "";
+var pageKeys = Object.keys(pages);
+var defaultPage = "A4 Landscape";
+for (var p = 0; p < pageKeys.length; p++) {
+  var key = pageKeys[p];
+  var opt = document.createElement("option");
+  opt.text = key;
+  opt.value = key;
+  if (key === defaultPage) opt.selected = true;
+  pageSizeSelect.add(opt);
 }
 
 initFromProductData();
