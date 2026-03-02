@@ -1,7 +1,7 @@
 class bellyBand {
   constructor(data) {
     this.labelData = data;
-    this.boxSize = { width: 310, height: 222, depth: 17 };
+    this.boxSize = { width: 310, height: 222, depth: 18 };
   }
   // --- Original canvas render (commented out) ---
   // render() {
@@ -746,17 +746,17 @@ function buildSectionBack(w, h, back, style, assets, stackAfter) {
   var gap = 8;
   var barMinPx = Math.floor(30 * 300 / 25.4);
   var barW = Math.max(barMinPx, Math.floor((contentWidthPx - gap) / 2));
-  var qrSize = Math.max(24, contentWidthPx - gap - barW);
+  var barH = Math.max(24, contentWidthPx - gap - barW);
 
   var smallImagesList = (assets && assets.smallImages && Array.isArray(assets.smallImages)) ? assets.smallImages.slice(0, 2) : [];
   if (smallImagesList.length >= 2) {
     var imgGap = 8;
     var smallImagesWrap = document.createElement("div");
-    smallImagesWrap.style.cssText = "flex:1;min-height:0;display:flex;flex-direction:row;gap:" + imgGap + "px;width:100%;margin:0.25em 0;box-sizing:border-box;";
+    smallImagesWrap.style.cssText = "flex:1;min-height:0;display:flex;flex-direction:row;align-items:stretch;gap:" + imgGap + "px;width:100%;margin:0.25em 0;box-sizing:border-box;";
     for (var si = 0; si < 2; si++) {
       var simg = document.createElement("img");
       simg.alt = "Product";
-      simg.style.cssText = "flex:1;min-width:0;width:auto;height:100%;object-fit:contain;display:block;background:transparent;";
+      simg.style.cssText = "flex:1;min-width:0;width:0;height:100%;object-fit:contain;object-position:center;display:block;background:transparent;";
       simg.src = smallImagesList[si];
       if (simg.src && !/\.svg(\?|#|$)/i.test(simg.src)) simg.crossOrigin = "anonymous";
       if (!simg.src) simg.style.background = "#eee";
@@ -777,20 +777,20 @@ function buildSectionBack(w, h, back, style, assets, stackAfter) {
   }
 
   var codesRow = document.createElement("div");
-  codesRow.style.cssText = "display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:" + gap + "px;padding:0;width:100%;min-width:0;box-sizing:border-box;";
+  codesRow.style.cssText = "display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:" + gap + "px;padding:0;width:100%;min-width:0;box-sizing:border-box;min-height:" + barH + "px;";
   var qr = document.createElement("img");
   qr.alt = "QR";
   qr.crossOrigin = "anonymous";
-  qr.style.cssText = "width:" + qrSize + "px;height:" + qrSize + "px;min-width:0;object-fit:contain;background:#eee;flex-shrink:1;display:block;";
+  qr.style.cssText = "width:" + barH + "px;height:" + barH + "px;min-width:0;object-fit:contain;background:#eee;flex-shrink:0;display:block;";
   qr.src = (assets && assets.qrCode) || "";
-  if (qr.src) qr.onload = function () { sizeImgForExport(this, qrSize, qrSize); };
+  if (qr.src) qr.onload = function () { sizeImgForExport(this, barH, barH); };
   codesRow.appendChild(qr);
   var bar = document.createElement("img");
   bar.alt = "Barcode";
   bar.crossOrigin = "anonymous";
-  bar.style.cssText = "height:" + qrSize + "px;width:" + barW + "px;min-width:" + barMinPx + "px;max-width:" + barW + "px;object-fit:contain;background:#eee;flex-shrink:0;display:block;";
+  bar.style.cssText = "height:" + barH + "px;width:" + barW + "px;min-width:" + barMinPx + "px;max-width:" + barW + "px;object-fit:contain;background:#eee;flex-shrink:0;display:block;";
   bar.src = (assets && assets.barcode) || "";
-  if (bar.src) bar.onload = function () { sizeImgForExport(this, barW, qrSize); };
+  if (bar.src) bar.onload = function () { sizeImgForExport(this, barW, barH); };
   if (!bar.src) bar.style.background = "#ddd";
   codesRow.appendChild(bar);
   footer.appendChild(codesRow);
@@ -885,6 +885,19 @@ function drawImageOrPlaceholder(ctx, img, x, y, w, h, label) {
     ctx.drawImage(img, x, y, w, h);
   } else {
     drawPlaceholder(ctx, x, y, w, h, label);
+  }
+}
+
+function drawImageFitInBox(ctx, img, x, y, boxW, boxH, label) {
+  if (img && img.naturalWidth && img.naturalHeight) {
+    var scale = Math.min(boxW / img.naturalWidth, boxH / img.naturalHeight);
+    var drawW = img.naturalWidth * scale;
+    var drawH = img.naturalHeight * scale;
+    var dx = x + (boxW - drawW) / 2;
+    var dy = y + (boxH - drawH) / 2;
+    ctx.drawImage(img, dx, dy, drawW, drawH);
+  } else {
+    drawPlaceholder(ctx, x, y, boxW, boxH, label);
   }
 }
 
@@ -1003,24 +1016,23 @@ function drawBack(ctx, data, assets, x, y, w, h) {
   var gap = 8;
   var barMinPx = Math.floor(30 * 300 / 25.4);
   var barW = Math.max(barMinPx, Math.floor((contentW - gap) / 2));
-  var qrSize = Math.max(24, contentW - gap - barW);
+  var barH = Math.max(24, contentW - gap - barW);
   var back = data.content.back || {};
   var qrLabelLines = (back.qrLabel || "").split("\n").filter(Boolean).length;
   var qrLabelH = qrLabelLines ? 6 + qrLabelLines * (contentSize * 1.3 + 2) : 0;
-  var footerH = qrLabelH + 6 + qrSize;
+  var footerH = qrLabelH + 6 + barH;
 
   ctx.font = fontAtSize(data.style.fontBody, contentSize);
   var titleH = 0;
   var specsH = 0;
   var descriptionH = 0;
   var bulletsH = 0;
-  var smallImagesH = (assets.smallImages && assets.smallImages.length >= 2) ? Math.min(80, Math.floor(contentW * 0.2)) + lineH : 0;
   if (back.title) titleH = subheadingSize * 1.3;
   if (back.specs && back.specs.length) specsH = (lineH + 2) * back.specs.length + lineH * 1.5;
   if (back.description) descriptionH = measureWrapHeight(ctx, back.description, contentW, lineH) + lineH;
   if (back.bullets && back.bullets.length) bulletsH = (lineH + 2) * back.bullets.length + lineH * 1.5;
 
-  var totalContentH = titleH + specsH + descriptionH + bulletsH + lineH + smallImagesH;
+  var totalContentH = titleH + specsH + descriptionH + bulletsH + lineH;
   var contentAreaH = availableH - footerH;
   var scale = totalContentH > contentAreaH ? Math.max(0.5, contentAreaH / totalContentH) : 1;
   if (scale < 1) {
@@ -1029,7 +1041,7 @@ function drawBack(ctx, data, assets, x, y, w, h) {
     tinySize *= scale;
     lineH = contentSize * 1.3;
     qrLabelH = qrLabelLines ? 6 + qrLabelLines * (contentSize * 1.3 + 2) : 0;
-    footerH = qrLabelH + 6 + qrSize;
+    footerH = qrLabelH + 6 + barH;
   }
 
   var textY = contentTop;
@@ -1066,24 +1078,23 @@ function drawBack(ctx, data, assets, x, y, w, h) {
   drawHorizontalLine(ctx, x + pad, textY, contentW, data.style.borderColor);
   textY += lineH;
 
+  var footerTop = contentBottom - pad - footerH;
   var smallImgs = assets.smallImages;
   if (smallImgs && smallImgs.length >= 2) {
     var smallImgGap = 8;
+    var smallImgAreaH = Math.max(20, footerTop - textY - lineH);
     var smallImgW = Math.floor((contentW - smallImgGap) / 2);
-    var smallImgH = Math.min(80, Math.floor(contentW * 0.2));
-    drawImageOrPlaceholder(ctx, smallImgs[0], x + pad, textY, smallImgW, smallImgH, "Product");
-    drawImageOrPlaceholder(ctx, smallImgs[1], x + pad + smallImgW + smallImgGap, textY, smallImgW, smallImgH, "Product");
-    textY += smallImgH + lineH;
+    drawImageFitInBox(ctx, smallImgs[0], x + pad, textY, smallImgW, smallImgAreaH, "Product");
+    drawImageFitInBox(ctx, smallImgs[1], x + pad + smallImgW + smallImgGap, textY, smallImgW, smallImgAreaH, "Product");
   }
 
-  var footerTop = contentBottom - pad - footerH;
   ctx.font = fontAtSize(data.style.fontBody, contentSize);
   (back.qrLabel || "").split("\n").forEach(function (line, i) {
     ctx.fillText(line, x + pad, footerTop + contentSize + i * (contentSize * 1.3 + 2));
   });
   var codesTop = footerTop + qrLabelH + 6;
-  drawImageOrPlaceholder(ctx, assets.qrCode, x + pad, codesTop, qrSize, qrSize, "QR");
-  drawImageOrPlaceholder(ctx, assets.barcode, x + pad + qrSize + gap, codesTop, barW, qrSize, "Barcode");
+  drawImageOrPlaceholder(ctx, assets.qrCode, x + pad, codesTop, barH, barH, "QR");
+  drawImageOrPlaceholder(ctx, assets.barcode, x + pad + barH + gap, codesTop, barW, barH, "Barcode");
 }
 
 function drawBottom(ctx, data, assets, x, y, w, h) {
