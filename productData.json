@@ -302,7 +302,41 @@
           "title": "Mechanical Calculator Kit"
         }
       }
+    },
+    {
+      "title": "Mechanical Calculator",
+      "description": "A Functioning Mechanical Calculator,Made With Wooden Gears - DIY Assembly",
+      "eyebrow": "DIY Mechanical Computing Kit",
+      "subtitle": "Inspired by early pocket adding machines",
+      "tagline": "Build a real working mechanical computer",
+      "features": "Add • Subtract • Multiply • Divide",
+      "specs": [
+            "Build time: 1–2 hours",
+            "Difficulty: Moderate",
+            "Components: Precision laser-cut wood",
+            "Tools required: Glue",
+            "Age: 8+",
+            "Designed and manufactured in Australia"
+          ],
+      "longDescription": "Before electronic calculators existed, arithmetic was performed using ingenious mechanical devices. This kit recreates those principles using precision laser-cut components, allowing you to assemble a fully functional mechanical calculator capable of real computation",
+      "bullets": [
+        "Fully functional arithmetic mechanism",
+        "Educational and historically inspired",
+        "Smooth mechanical operation",
+        "No electronics required",
+        "Display-worthy finished model"
+       ],
+      "qrLabel": "Watch the assembly and demonstration video",
+      "mainImageUrl": "photos/adder/calcInHandNoBackground.png",
+      "smallImages": [
+        "photos/adder/calcFullExplodeIsoLeft.svg",
+        "photos/adder/adderbackFaintBG.jpg",
+        "photos/adder/adderisoFaintBG.jpg"
+      ],
+      "qrCode": "photos/adder/calculaterQR.png",
+      "barcode": "photos/adder/calculatorBarcodeEAN.jpeg"
     }
     
   ]
 }
+

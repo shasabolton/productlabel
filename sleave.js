@@ -2,9 +2,9 @@ class Sleave {
     constructor(data) {
       this.labelData = data;
       this.boxSize = { width: 310, height: 222, depth: 18 };
-      this.sleaveWidth = 105; // mm
+      this.sleaveWidth = 95; // mm
       // Section layout: center (xc,yc) and rotation (0 or 180 deg) per section.
-      // Populated by layout(); keys vary by mode (single vs two-column when stack too tall).
+      // Populated by layout(); keys vary by mode (single vs two-column (double) when stack too tall).
       this.sectionLayout = {
         back: { xc: 0, yc: 0, rot: 180 },
         top: { xc: 0, yc: 0, rot: 0 },
@@ -28,6 +28,9 @@ class Sleave {
         canvas.width = pageWidthPx;
         canvas.height = pageHeightPx;
         this.marginPx = page.margin / 25.4 * this.dpi;
+        // keep page dimensions around for layout calculations
+        this.pageWidthPx = pageWidthPx;
+        this.pageHeightPx = pageHeightPx;
         var container = document.querySelector('.canvas-container');
         if (container) container.appendChild(canvas);
         else document.body.append(canvas);
@@ -42,42 +45,50 @@ class Sleave {
         var overlapH = 10 * scale; // 10mm overlap section
 
         var pageH = pageHeightPx;
-        var stackH = overlapH + spineH + frontBackH + spineH + overlapH; // overlap, top, front, bottom, overlap
+        var stackH = overlapH + spineH*2 + frontBackH*2; // overlap, top, front, bottom, overlap
         var tooTall = stackH > pageH;
-
         if (tooTall) {
-            alert("Sleave layout exceeds page height. Content may run off canvas.");
-            // Two-column: left = overlap, top, front, bottom, overlap; right = back next to front
-            this.layoutTall(w, frontBackH, spineH, overlapH, pageH);
+            alert(stackH/scale+"mm sleave cannot fit on page which is "+ pageH/scale +"  tall so side by side layout will be used.");
+            // Two-column (double) layout: left column contains overlap, top, front, bottom, overlap;
+            // right column holds back beside the front section.  Each column should be centered
+            // within its half of the page.
+            this.layoutDouble(w, frontBackH, spineH, overlapH);
         } else {
-            // Single column: back, top, front, bottom, overlap
+            // Single column: back, top, front, bottom, overlap centered on page
             this.layoutSingle(w, frontBackH, spineH, overlapH);
         }
     }
 
     layoutSingle(w, frontBackH, spineH, overlapH) {
-        var y = 0;
-        this.sectionLayout.back.xc = w / 2;
+        // compute total height of the stacked sections
+        var totalH = frontBackH * 2 + spineH * 2 + overlapH;
+        // start y so stack is vertically centered on page; it's fine for y to be
+        // negative when the stack is taller than the page – that causes the
+        // drawing to overflow equally above and below the sheet.
+        var y = (this.pageHeightPx - totalH) / 2;
+        // center of the page horizontally
+        var pageCenterX = this.pageWidthPx / 2;
+        this.sectionLayout.back.xc = pageCenterX;
         this.sectionLayout.back.yc = y + frontBackH / 2;
         this.sectionLayout.back.rot = 180;
         y += frontBackH;
 
-        this.sectionLayout.top.xc = w / 2;
+        this.sectionLayout.top.xc = pageCenterX;
         this.sectionLayout.top.yc = y + spineH / 2;
         this.sectionLayout.top.rot = 0;
         y += spineH;
 
-        this.sectionLayout.front.xc = w / 2;
+        this.sectionLayout.front.xc = pageCenterX;
         this.sectionLayout.front.yc = y + frontBackH / 2;
         this.sectionLayout.front.rot = 0;
         y += frontBackH;
 
-        this.sectionLayout.bottom.xc = w / 2;
+        this.sectionLayout.bottom.xc = pageCenterX;
         this.sectionLayout.bottom.yc = y + spineH / 2;
         this.sectionLayout.bottom.rot = 0;
         y += spineH;
 
-        this.sectionLayout.overlap.xc = w / 2;
+        this.sectionLayout.overlap.xc = pageCenterX;
         this.sectionLayout.overlap.yc = y + overlapH / 2;
         this.sectionLayout.overlap.rot = 0;
 
@@ -88,10 +99,17 @@ class Sleave {
         this.drawSection("overlap", w, overlapH, "Overlap");
     }
 
-    layoutTall(w, frontBackH, spineH, overlapH, pageH) {
-        var leftXc = w / 2;
-        var rightXc = w + w / 2; // back column next to front
-        var y = 0;
+    layoutDouble(w, frontBackH, spineH, overlapH) {
+        // Compute horizontal centers for left and right columns at quarter points of the page
+        var leftXc = this.pageWidthPx / 4;
+        var rightXc = this.pageWidthPx * 3 / 4;
+        // left column contains overlapTop + top + front + bottom + overlapBottom
+        // which is one front/back section, two spine sections and two overlaps
+        var totalLeftH = frontBackH + spineH * 2 + overlapH * 2;
+        var yLeft = (this.pageHeightPx - totalLeftH) / 2;
+        // right column only holds the back section; center that separately
+        var yRight = (this.pageHeightPx - frontBackH) / 2;
+        var y = yLeft; // use y for placing left-column sections
 
         this.sectionLayout.overlapTop.xc = leftXc;
         this.sectionLayout.overlapTop.yc = y + overlapH / 2;
@@ -118,9 +136,11 @@ class Sleave {
         this.sectionLayout.overlapBottom.yc = y + overlapH / 2;
         this.sectionLayout.overlapBottom.rot = 0;
 
+        // place back section centered in right half, aligned vertically with front
         this.sectionLayout.back.xc = rightXc;
-        this.sectionLayout.back.yc = frontYc;
-        this.sectionLayout.back.rot = 0; // up the same way as front
+        // position back vertically centred in its half of the page, not tied to left
+        this.sectionLayout.back.yc = yRight + frontBackH / 2;
+        this.sectionLayout.back.rot = 0; // same orientation as front
 
         this.drawSection("overlapTop", w, overlapH, "Overlap");
         this.drawSection("top", w, spineH, "Top");
