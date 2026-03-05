@@ -95,12 +95,13 @@ body {
   align-items: center;
 }
 
-/* Canvas container - display scaled, canvas keeps full A4 resolution */
+/* Canvas container - display scaled, canvas/SVG keeps full resolution for export */
 .canvas-container {
   flex: 1;
+  min-height: 0;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   padding: 1rem;
   overflow: auto;
 }
@@ -108,7 +109,10 @@ body {
 .canvas-container #canvas,
 .canvas-container #belly-band-page {
   max-width: 100%;
+  max-height: 100%;
+  width: auto;
   height: auto;
+  object-fit: contain;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
   border-radius: 4px;
 }
