@@ -925,7 +925,7 @@ class Sleave {
                 totalContentW += rowSizes[ti].w;
                 if (ti > 0) totalContentW += rowGapPx;
             }
-            var startX = x + Math.max(0, (sectionWidth - totalContentW) / 2);
+            var startX = x + (sectionWidth - totalContentW) / 2;
             offsetX = startX;
             for (var ri = 0; ri < rowGroups.length; ri++) {
                 rowGroups[ri].setAttribute("transform", "translate(" + offsetX + "," + (y + (maxH - rowSizes[ri].h) / 2) + ")");
