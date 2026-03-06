@@ -6,9 +6,11 @@ class Sleave {
       this.labelData.designedBy = "Designed By Shasa Bolton";
       this.boxSize = { width: 310, height: 222, depth: 18 };
       this.sleaveWidth = 95; // mm
-      this.sectionMarginMm = 2;
-      this.lineThicknessMm = 1;
-      this.thinLineThicknessMm = 0.5;
+      this.sectionMarginMm = 5;
+      this.subsectionRowPaddingMm = 1;
+      this.rowGapMm = 1;
+      this.lineThicknessMm = 0.8;
+      this.thinLineThicknessMm = 0.2;
       // Section layout: center (xc,yc) and rotation (0 or 180 deg) per section.
       // Populated by layout(); keys vary by mode (single vs two-column (double) when stack too tall).
       this.sectionLayout = {
@@ -29,18 +31,19 @@ class Sleave {
         },
         top: { xc: 0, yc: 0, w:0, h:0, rot: 0, 
             subsections:[
-                ["title-medium-headings-centered"]
-            ]
+                ["title-medium-headings-centered-colorwhite"]
+            ],
+            backgroundColor:"black"
         },
         front: { xc: 0, yc: 0, w:0, h:0, rot: 0, 
             subsections:[
                 ["decorativeFiller"],
-                ["eyebrow-medium-body-centered"],
-                ["----------------"],
-                ["title-large-headings-centered"],
+                ["eyebrow-medium-body-centered-doubleUnderline"],
+
+                ["title-large-headings-centered-capitalize"],
                 ["subtitle-small-body-italic-centered"],
                 ["tagline-small-body-centered"],
-                ["heroImage-fit"],
+                ["heroImage-cropAlpha-1.3ParentWidth"],
                 ["----------------"],
                 ["smallImage-fit"],
                 ["features-small-body-centered"],
@@ -49,8 +52,9 @@ class Sleave {
         },
         bottom: { xc: 0, yc: 0, w:0, h:0, rot: 0, 
             subsections:[
-                ["logo-0.8ParentHeight",["logoText-medium-headings-centered-shrinkToFit","designedBy-small-body-centered"]] 
-            ]         
+                ["logo-0.8ParentHeight-invertColors",["logoText-medium-headings-centered-shrinkToFit-colorwhite","designedBy-small-body-centered-colorwhite"]] 
+            ],
+            backgroundColor:"black"         
         },
         overlap: { xc: 0, yc: 0, w:0, h:0, rot: 0},
         overlapTop: { xc: 0, yc: 0, w:0, h:0, rot: 0},
@@ -58,7 +62,7 @@ class Sleave {
       };
  
        this.fontSizes = {
-        large: 120,
+        large: 140,
         medium: 80,
         small: 60,
         xsmall: 40,
@@ -99,12 +103,13 @@ class Sleave {
         var align = "left";
         var heightRatio = null;
         var widthMm = null;
+        var widthRatio = null;
         var shrinkToFit = false;
         if (parts.length > 1) {
             var rest = parts.slice(1);
-            if (rest[rest.length - 1] === "italic") {
+            if (rest.indexOf("italic") >= 0) {
                 italic = true;
-                rest = rest.slice(0, -1);
+                rest = rest.filter(function(t) { return t !== "italic"; });
             }
             if (rest.indexOf("shrinkToFit") >= 0) {
                 shrinkToFit = true;
@@ -120,21 +125,50 @@ class Sleave {
                 fit = true;
                 rest = rest.filter(function(t) { return t !== "fit"; });
             }
-            if (rest.length >= 1 && /^(centered|left|right)$/.test(rest[rest.length - 1])) {
-                align = rest[rest.length - 1];
-                rest = rest.slice(0, -1);
+            var capitalize = false;
+            if (rest.indexOf("capitalize") >= 0) {
+                capitalize = true;
+                rest = rest.filter(function(t) { return t !== "capitalize"; });
             }
+            var doubleUnderline = false;
+            if (rest.indexOf("doubleUnderline") >= 0) {
+                doubleUnderline = true;
+                rest = rest.filter(function(t) { return t !== "doubleUnderline"; });
+            }
+            var invertColors = false;
+            if (rest.indexOf("invertColors") >= 0) {
+                invertColors = true;
+                rest = rest.filter(function(t) { return t !== "invertColors"; });
+            }
+            var cropAlpha = false;
+            if (rest.indexOf("cropAlpha") >= 0) {
+                cropAlpha = true;
+                rest = rest.filter(function(t) { return t !== "cropAlpha"; });
+            }
+            var color = null;
             for (var ri = rest.length - 1; ri >= 0; ri--) {
                 var token = rest[ri];
+                var colorMatch = token && token.match(/^color(.+)$/);
                 var hrMatch = token && token.match(/^(\d+(?:\.\d+)?)ParentHeight$/);
                 var wMatch = token && token.match(/^(\d+(?:\.\d+)?)mmWide$/);
-                if (hrMatch) {
+                var wrMatch = token && token.match(/^(\d+(?:\.\d+)?)ParentWidth$/);
+                if (colorMatch) {
+                    color = colorMatch[1];
+                    rest = rest.slice(0, ri).concat(rest.slice(ri + 1));
+                } else if (hrMatch) {
                     heightRatio = parseFloat(hrMatch[1], 10);
                     rest = rest.slice(0, ri).concat(rest.slice(ri + 1));
                 } else if (wMatch) {
                     widthMm = parseFloat(wMatch[1], 10);
                     rest = rest.slice(0, ri).concat(rest.slice(ri + 1));
+                } else if (wrMatch) {
+                    widthRatio = parseFloat(wrMatch[1], 10);
+                    rest = rest.slice(0, ri).concat(rest.slice(ri + 1));
                 }
+            }
+            if (rest.length >= 1 && /^(centered|left|right|justify)$/.test(rest[rest.length - 1])) {
+                align = rest[rest.length - 1];
+                rest = rest.slice(0, -1);
             }
             if (rest.length >= 1 && /^(large|medium|small|xsmall)$/.test(rest[0])) {
                 sizeKey = rest[0];
@@ -143,7 +177,7 @@ class Sleave {
                 styleKey = rest[1];
             }
         }
-        return { prop: prop, index: index, sizeKey: sizeKey, styleKey: styleKey, italic: italic, isImage: isImage, align: align, heightRatio: heightRatio, widthMm: widthMm, shrinkToFit: shrinkToFit, matchRowHeight: matchRowHeight, fit: fit };
+        return { prop: prop, index: index, sizeKey: sizeKey, styleKey: styleKey, italic: italic, isImage: isImage, align: align, heightRatio: heightRatio, widthMm: widthMm, widthRatio: widthRatio, shrinkToFit: shrinkToFit, matchRowHeight: matchRowHeight, fit: fit, capitalize: capitalize, doubleUnderline: doubleUnderline, invertColors: invertColors, cropAlpha: cropAlpha, color: color };
     }
 
     /**
@@ -177,13 +211,20 @@ class Sleave {
      * Get theme font string for the given style and size. Uses global selectedTheme when available (set by script.js).
      */
     getThemeFont(styleKey, italic, sizeKey) {
-        var th = (typeof selectedTheme !== "undefined" && selectedTheme) ? selectedTheme : { headings: "Harrington", headingsWeight: "400", body: "Arial" };
         var size = this.getFontSize(sizeKey);
+        return this.getThemeFontWithSize(styleKey, italic, size);
+    }
+
+    /**
+     * Theme font string with an explicit pixel size (for shrink-to-fit).
+     */
+    getThemeFontWithSize(styleKey, italic, sizePx) {
+        var th = (typeof selectedTheme !== "undefined" && selectedTheme) ? selectedTheme : { headings: "Harrington", headingsWeight: "400", body: "Arial" };
         if (styleKey === "headings") {
             var w = th.headingsWeight || "400";
-            return (italic ? "italic " : "") + w + " " + size + "px " + (th.headings || "sans-serif");
+            return (italic ? "italic " : "") + w + " " + sizePx + "px " + (th.headings || "sans-serif");
         }
-        return (italic ? "italic " : "") + size + "px " + (th.body || "sans-serif");
+        return (italic ? "italic " : "") + sizePx + "px " + (th.body || "sans-serif");
     }
 
     getFontSize(sizeKey) {
@@ -259,6 +300,53 @@ class Sleave {
     }
 
     /**
+     * Load an image, draw to canvas, and return alpha bounding box { minX, minY, w, h, natW, natH }. Returns null if no alpha or error.
+     */
+    loadImageAlphaBounds(url) {
+        if (!url || typeof url !== "string") return Promise.resolve(null);
+        var self = this;
+        return new Promise(function(resolve) {
+            var img = new Image();
+            img.onload = function() {
+                var nw = img.naturalWidth;
+                var nh = img.naturalHeight;
+                if (nw <= 0 || nh <= 0) { resolve(null); return; }
+                try {
+                    var canvas = document.createElement("canvas");
+                    canvas.width = nw;
+                    canvas.height = nh;
+                    var ctx = canvas.getContext("2d");
+                    ctx.drawImage(img, 0, 0);
+                    var data = ctx.getImageData(0, 0, nw, nh).data;
+                    var minX = nw, minY = nh, maxX = -1, maxY = -1;
+                    var alphaThreshold = 1;
+                    for (var py = 0; py < nh; py++) {
+                        for (var px = 0; px < nw; px++) {
+                            var i = (py * nw + px) * 4;
+                            if (data[i + 3] > alphaThreshold) {
+                                if (px < minX) minX = px;
+                                if (px > maxX) maxX = px;
+                                if (py < minY) minY = py;
+                                if (py > maxY) maxY = py;
+                            }
+                        }
+                    }
+                    if (maxX < minX || maxY < minY) {
+                        resolve({ minX: 0, minY: 0, w: nw, h: nh, natW: nw, natH: nh });
+                        return;
+                    }
+                    resolve({ minX: minX, minY: minY, w: maxX - minX + 1, h: maxY - minY + 1, natW: nw, natH: nh });
+                } catch (e) {
+                    resolve(null);
+                }
+            };
+            img.onerror = function() { resolve(null); };
+            img.crossOrigin = "anonymous";
+            img.src = url;
+        });
+    }
+
+    /**
      * Collect image URLs that have widthMm but no heightRatio (e.g. barcode) so we can load and cache their dimensions.
      */
     collectFixedWidthImageUrls() {
@@ -266,7 +354,7 @@ class Sleave {
         var self = this;
         function add(specStr) {
             var spec = self.parseSpec(specStr);
-            if (spec.isImage && spec.widthMm != null && spec.heightRatio == null && !spec.matchRowHeight) {
+            if (spec.isImage && (spec.widthMm != null || spec.widthRatio != null) && spec.heightRatio == null && !spec.matchRowHeight) {
                 var value = self.getSpecValue(spec);
                 if (value && typeof value === "string") urls.push(value);
             }
@@ -321,6 +409,37 @@ class Sleave {
     }
 
     /**
+     * Collect image URLs for specs that have "cropAlpha" (so we can preload alpha bounds).
+     */
+    collectCropAlphaImageUrls() {
+        var urls = [];
+        var self = this;
+        function add(specStr) {
+            var spec = self.parseSpec(specStr);
+            if (spec.isImage && spec.cropAlpha) {
+                var value = self.getSpecValue(spec);
+                if (value && typeof value === "string") urls.push(value);
+            }
+        }
+        function walk(items) {
+            for (var i = 0; i < items.length; i++) {
+                var item = items[i];
+                if (typeof item === "string") add(item);
+                else if (Array.isArray(item)) walk(item);
+            }
+        }
+        var sl = this.sectionLayout;
+        for (var key in sl) {
+            if (!sl[key].subsections) continue;
+            for (var r = 0; r < sl[key].subsections.length; r++) {
+                var row = sl[key].subsections[r];
+                walk(Array.isArray(row) ? row : [row]);
+            }
+        }
+        return urls;
+    }
+
+    /**
      * Count rows in a section that contain at least one fit image. Used for Stage 2 height reduction.
      */
     countFitImageRows(subsections) {
@@ -340,12 +459,16 @@ class Sleave {
     }
 
     /**
-     * Get natural width and height (px) for a fit image spec. Uses _imageDimensions or 100x100.
+     * Get natural width and height (px) for a fit image spec. Uses _imageDimensions or _imageCropAlpha (when cropAlpha) or 100x100.
      */
     getNaturalSizeForFitSpec(spec) {
         if (!spec || !spec.isImage || !spec.fit) return { w: 100, h: 100 };
         var value = this.getSpecValue(spec);
         var url = value && typeof value === "string" ? value : "";
+        if (spec.cropAlpha && this._imageCropAlpha && this._imageCropAlpha[url]) {
+            var crop = this._imageCropAlpha[url];
+            if (crop.w > 0 && crop.h > 0) return { w: crop.w, h: crop.h };
+        }
         var dim = this._imageDimensions && url ? this._imageDimensions[url] : null;
         if (dim && dim.w > 0 && dim.h > 0) return { w: dim.w, h: dim.h };
         return { w: 100, h: 100 };
@@ -353,6 +476,7 @@ class Sleave {
 
     /**
      * Preload dimensions for images that use widthMm without heightRatio (e.g. barcode) and fit images. Fills this._imageDimensions[url].
+     * Also preloads alpha bounds for cropAlpha images into this._imageCropAlpha[url].
      */
     preloadImageDimensions() {
         var urls = this.collectFixedWidthImageUrls().concat(this.collectFitImageUrls());
@@ -363,11 +487,24 @@ class Sleave {
         }
         this._imageDimensions = this._imageDimensions || {};
         var self = this;
-        return Promise.all(unique.map(function(url) {
+        var dimPromises = unique.map(function(url) {
             return self.loadImageDimensions(url).then(function(dim) {
                 if (dim) self._imageDimensions[url] = dim;
             });
-        }));
+        });
+        var cropUrls = this.collectCropAlphaImageUrls();
+        var cropSeen = {};
+        var cropUnique = [];
+        for (var c = 0; c < cropUrls.length; c++) {
+            if (!cropSeen[cropUrls[c]]) { cropSeen[cropUrls[c]] = true; cropUnique.push(cropUrls[c]); }
+        }
+        this._imageCropAlpha = this._imageCropAlpha || {};
+        var cropPromises = cropUnique.map(function(url) {
+            return self.loadImageAlphaBounds(url).then(function(bounds) {
+                if (bounds) self._imageCropAlpha[url] = bounds;
+            });
+        });
+        return Promise.all(dimPromises.concat(cropPromises));
     }
 
     render() {
@@ -529,6 +666,29 @@ class Sleave {
         this.drawSection("bottom", "Bottom");
         this.drawSection("overlapBottom", "Overlap");
         this.drawSection("back", "Back");
+
+        var scale = this.dpi / 25.4;
+        var centerX = this.pageWidthPx / 2;
+        var cutLenPx = 10 * scale;
+        var cutThickPx = 0.2 * scale;
+        var topCut = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        topCut.setAttribute("x1", centerX);
+        topCut.setAttribute("y1", 0);
+        topCut.setAttribute("x2", centerX);
+        topCut.setAttribute("y2", cutLenPx);
+        topCut.setAttribute("stroke", "#000");
+        topCut.setAttribute("stroke-width", cutThickPx);
+        topCut.setAttribute("stroke-opacity", "0.5");
+        this.svg.appendChild(topCut);
+        var bottomCut = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        bottomCut.setAttribute("x1", centerX);
+        bottomCut.setAttribute("y1", this.pageHeightPx - cutLenPx);
+        bottomCut.setAttribute("x2", centerX);
+        bottomCut.setAttribute("y2", this.pageHeightPx);
+        bottomCut.setAttribute("stroke", "#000");
+        bottomCut.setAttribute("stroke-width", cutThickPx);
+        bottomCut.setAttribute("stroke-opacity", "0.5");
+        this.svg.appendChild(bottomCut);
     }
 
     /**
@@ -547,6 +707,16 @@ class Sleave {
 
         var g = document.createElementNS("http://www.w3.org/2000/svg", "g");
         g.setAttribute("transform", "translate(" + xc + "," + yc + ") rotate(" + rotDeg + ")");
+
+        if (sl.backgroundColor) {
+            var bgRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            bgRect.setAttribute("x", -w / 2);
+            bgRect.setAttribute("y", -h / 2);
+            bgRect.setAttribute("width", w);
+            bgRect.setAttribute("height", h);
+            bgRect.setAttribute("fill", sl.backgroundColor);
+            g.appendChild(bgRect);
+        }
 
         var rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
         rect.setAttribute("x", -w / 2);
@@ -575,17 +745,17 @@ class Sleave {
             var contentWidth = w - 2 * sectionMarginPx;
             var contentHeight = h;
             var subsectionPadding = 0;
+            var rowPaddingPx = (this.subsectionRowPaddingMm != null ? this.subsectionRowPaddingMm : 1) * scale;
             var measureGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
             var totalContentHeight = 0;
             for (var r = 0; r < sl.subsections.length; r++) {
                 var row = sl.subsections[r];
                 if (!Array.isArray(row)) row = [row];
-                var result = this.layoutItems(measureGroup, contentLeft, totalContentHeight, row, contentWidth, contentHeight, subsectionPadding, true, -w / 2, w, 0);
+                var result = this.layoutItems(measureGroup, contentLeft, totalContentHeight + rowPaddingPx, row, contentWidth, contentHeight, subsectionPadding, true, -w / 2, contentWidth, 0);
                 if (result && (result.w > 0 || result.h > 0)) {
-                    totalContentHeight += result.h + subsectionPadding;
+                    totalContentHeight += rowPaddingPx + result.h + rowPaddingPx;
                 }
             }
-            if (totalContentHeight > 0) totalContentHeight -= subsectionPadding;
             var reductionPerRow = 0;
             if (totalContentHeight > h) {
                 var numFitImageRows = this.countFitImageRows(sl.subsections);
@@ -596,9 +766,9 @@ class Sleave {
             for (var r = 0; r < sl.subsections.length; r++) {
                 var row = sl.subsections[r];
                 if (!Array.isArray(row)) row = [row];
-                var result = this.layoutItems(g, contentLeft, runningY, row, contentWidth, contentHeight, subsectionPadding, true, -w / 2, w, reductionPerRow);
+                var result = this.layoutItems(g, contentLeft, runningY + rowPaddingPx, row, contentWidth, contentHeight, subsectionPadding, true, -w / 2, contentWidth, reductionPerRow);
                 if (result && (result.w > 0 || result.h > 0)) {
-                    runningY += result.h + subsectionPadding;
+                    runningY += rowPaddingPx + result.h + rowPaddingPx;
                 }
             }
         }
@@ -610,12 +780,14 @@ class Sleave {
      * Get the fixed width (px) for an item when in a horizontal row, or null if the item is flexible.
      * parentIsHorizontal true = item is a vertical stack: it counts as ONE cell; width is max of its rows' widths.
      * sectionHeight (optional) is used so height-dimensioned cells (e.g. 0.8ParentHeight) get implicit width = height for allocation.
+     * sectionWidth (optional) is used for widthRatio (e.g. 0.5ParentWidth).
      */
-    getFixedWidth(item, parentIsHorizontal, sectionHeight) {
+    getFixedWidth(item, parentIsHorizontal, sectionHeight, sectionWidth) {
         var scale = this.dpi / 25.4;
         if (typeof item === "string") {
             var spec = this.parseSpec(item);
             if (spec.widthMm != null) return spec.widthMm * scale;
+            if (spec.widthRatio != null && sectionWidth != null) return sectionWidth * spec.widthRatio;
             if (spec.heightRatio != null && sectionHeight != null) return sectionHeight * spec.heightRatio;
             return null;
         }
@@ -624,7 +796,7 @@ class Sleave {
                 var maxW = 0;
                 var anyNull = false;
                 for (var i = 0; i < item.length; i++) {
-                    var c = this.getFixedWidth(item[i], false, sectionHeight);
+                    var c = this.getFixedWidth(item[i], false, sectionHeight, sectionWidth);
                     if (c == null) anyNull = true;
                     else if (c > maxW) maxW = c;
                 }
@@ -632,7 +804,7 @@ class Sleave {
             } else {
                 var sum = 0;
                 for (var j = 0; j < item.length; j++) {
-                    var w = this.getFixedWidth(item[j], true, sectionHeight);
+                    var w = this.getFixedWidth(item[j], true, sectionHeight, sectionWidth);
                     if (w == null) return null;
                     sum += w;
                 }
@@ -650,6 +822,8 @@ class Sleave {
     layoutItems(sectionGroup, x, y, items, sectionWidth, sectionHeight, padding, isHorizontal, fullSectionLeft, fullSectionWidth, reductionPerRow) {
         padding = padding != null ? padding : 4;
         reductionPerRow = reductionPerRow != null ? reductionPerRow : 0;
+        var scale = this.dpi / 25.4;
+        var rowGapPx = isHorizontal ? (this.rowGapMm != null ? this.rowGapMm : 1) * scale : padding;
         var curX = x;
         var curY = y;
         var maxW = 0;
@@ -660,12 +834,12 @@ class Sleave {
             var sumFixed = 0;
             var flexCount = 0;
             for (var i = 0; i < items.length; i++) {
-                var fw = this.getFixedWidth(items[i], true, sectionHeight);
+                var fw = this.getFixedWidth(items[i], true, sectionHeight, sectionWidth);
                 fixedWidths.push(fw);
                 if (fw != null) sumFixed += fw;
                 else flexCount++;
             }
-            var gaps = Math.max(0, items.length - 1) * padding;
+            var gaps = Math.max(0, items.length - 1) * rowGapPx;
             var remaining = Math.max(0, sectionWidth - sumFixed - gaps);
             var flexWidth = flexCount > 0 ? remaining / flexCount : 0;
             for (var a = 0; a < items.length; a++) {
@@ -703,7 +877,7 @@ class Sleave {
                 rowItems.push(item);
                 rowCellWidths.push(cellWidth);
                 rowMatchRowHeight.push(matchRow);
-                curX += size.w + padding;
+                curX += size.w + (i < items.length - 1 ? rowGapPx : 0);
                 if (size.h > maxH) maxH = size.h;
             } else {
                 if (typeof item === "string") {
@@ -725,7 +899,7 @@ class Sleave {
             rowBox.setAttribute("y", y);
             rowBox.setAttribute("width", sectionWidth);
             rowBox.setAttribute("height", maxH);
-            rowBox.setAttribute("fill", "#fff");
+            rowBox.setAttribute("fill", "none");
             var subsectionBordersEl = document.getElementById("subsectionBordersCheckbox");
             rowBox.setAttribute("stroke", subsectionBordersEl && !subsectionBordersEl.checked ? "none" : "#000");
             sectionGroup.insertBefore(rowBox, rowGroups[0]);
@@ -744,22 +918,22 @@ class Sleave {
                     }
                     if (newSize) rowSizes[ri] = newSize;
                 }
-                offsetX += rowSizes[ri].w + padding;
+                offsetX += rowSizes[ri].w + (ri < rowGroups.length - 1 ? rowGapPx : 0);
             }
             var totalContentW = 0;
             for (var ti = 0; ti < rowGroups.length; ti++) {
                 totalContentW += rowSizes[ti].w;
-                if (ti > 0) totalContentW += padding;
+                if (ti > 0) totalContentW += rowGapPx;
             }
             var startX = x + Math.max(0, (sectionWidth - totalContentW) / 2);
             offsetX = startX;
             for (var ri = 0; ri < rowGroups.length; ri++) {
                 rowGroups[ri].setAttribute("transform", "translate(" + offsetX + "," + (y + (maxH - rowSizes[ri].h) / 2) + ")");
-                offsetX += rowSizes[ri].w + padding;
+                offsetX += rowSizes[ri].w + (ri < rowGroups.length - 1 ? rowGapPx : 0);
             }
         }
         var n = items.length;
-        var totalW = isHorizontal ? (curX - x) - (n >= 1 ? padding : 0) : maxW;
+        var totalW = isHorizontal ? (curX - x) : maxW;
         var totalH = isHorizontal ? maxH : (curY - y) - (n >= 1 ? padding : 0);
         return { w: Math.max(0, totalW), h: Math.max(0, totalH) };
     }
@@ -774,37 +948,44 @@ class Sleave {
         if (typeof specStr === "string" && /^-{3,}$/.test(specStr)) {
             var scale = this.dpi / 25.4;
             var lineThicknessPx = (this.lineThicknessMm != null ? this.lineThicknessMm : 0.5) * scale;
-            var lineY = y + lineThicknessPx / 2;
+            var breakPaddingMm = 1;
+            var breakPaddingPx = breakPaddingMm * scale;
+            var lineY = y + breakPaddingPx + lineThicknessPx / 2;
             var line = document.createElementNS("http://www.w3.org/2000/svg", "line");
             line.setAttribute("x1", x);
             line.setAttribute("y1", lineY);
             line.setAttribute("x2", x + sectionWidth);
             line.setAttribute("y2", lineY);
             line.setAttribute("stroke", "#000");
+            line.setAttribute("stroke-opacity", "0.5");
             line.setAttribute("stroke-width", lineThicknessPx);
             sectionGroup.appendChild(line);
-            return { w: sectionWidth, h: lineThicknessPx };
+            var breakH = breakPaddingPx + lineThicknessPx + breakPaddingPx;
+            return { w: sectionWidth, h: breakH };
         }
         var spec = this.parseSpec(specStr);
         if (spec.prop === "decorativeFiller") {
             var scale = this.dpi / 25.4;
-            var thinPx = (this.thinLineThicknessMm != null ? this.thinLineThicknessMm : 2) * scale;
-            var spaceMm = 3;
+            var thinPx = (this.lineThicknessMm != null ? this.lineThicknessMm : 0.5) * scale;
+            var spaceMm = 2;
             var spacePx = spaceMm * scale;
+            var gapBetweenMm = 2;
+            var gapBetweenPx = gapBetweenMm * scale;
             var drawW = (this.sleaveWidth != null ? this.sleaveWidth : 95) * scale;
             var drawX = -drawW / 2 - (sectionOriginX != null ? sectionOriginX : 0);
             for (var di = 0; di < 2; di++) {
-                var lineY = y + spacePx + thinPx / 2 + di * (thinPx + spacePx);
+                var lineY = y + spacePx + thinPx / 2 + di * (thinPx + gapBetweenPx);
                 var decoLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
                 decoLine.setAttribute("x1", drawX);
                 decoLine.setAttribute("y1", lineY);
                 decoLine.setAttribute("x2", drawX + drawW);
                 decoLine.setAttribute("y2", lineY);
                 decoLine.setAttribute("stroke", "#000");
+                decoLine.setAttribute("stroke-opacity", "0.5");
                 decoLine.setAttribute("stroke-width", thinPx);
                 sectionGroup.appendChild(decoLine);
             }
-            var decoH = spacePx + thinPx + spacePx + thinPx + spacePx;
+            var decoH = spacePx + thinPx + gapBetweenPx + thinPx + spacePx;
             return { w: sectionWidth, h: decoH };
         }
         var value = this.getSpecValue(spec);
@@ -815,6 +996,7 @@ class Sleave {
 
         if (isImage) {
             var scale = this.dpi / 25.4;
+            var parentWidthPx = fullSectionWidth != null ? fullSectionWidth : sectionWidth;
             if (spec.fit) {
                 var nat = this.getNaturalSizeForFitSpec(spec);
                 boxW = sectionWidth;
@@ -823,33 +1005,80 @@ class Sleave {
                     boxH = Math.max(0, boxH - reductionPerRow);
                     boxW = nat.w > 0 ? boxH * (nat.w / nat.h) : boxH;
                 }
-            } else if (spec.widthMm != null) boxW = spec.widthMm * scale;
-            else if (spec.heightRatio != null) boxH = sectionHeight * spec.heightRatio;
+            } else if (spec.widthMm != null) {
+                boxW = spec.widthMm * scale;
+            } else if (spec.widthRatio != null) {
+                boxW = parentWidthPx * spec.widthRatio;
+            } else if (spec.heightRatio != null) {
+                boxH = sectionHeight * spec.heightRatio;
+            }
             if (!spec.fit) {
                 if (spec.matchRowHeight && sectionHeight > 0) {
                     boxH = sectionHeight;
-                    if (spec.widthMm == null) boxW = boxH;
-                } else if (spec.widthMm == null && spec.heightRatio == null) {
+                    if (spec.widthMm == null && spec.widthRatio == null) boxW = boxH;
+                } else if (spec.widthMm == null && spec.widthRatio == null && spec.heightRatio == null) {
                     boxW = 100;
                     boxH = 100;
-                } else if (spec.widthMm == null) boxW = boxH;
+                } else if (spec.widthMm == null && spec.widthRatio == null) boxW = boxH;
                 else if (spec.heightRatio == null) {
                     var imgUrl = value && typeof value === "string" ? value : "";
+                    var crop = spec.cropAlpha && this._imageCropAlpha && imgUrl ? this._imageCropAlpha[imgUrl] : null;
                     var dim = this._imageDimensions && imgUrl ? this._imageDimensions[imgUrl] : null;
-                    if (dim && dim.w > 0) boxH = boxW * (dim.h / dim.w);
+                    if (crop && crop.w > 0) boxH = boxW * (crop.h / crop.w);
+                    else if (dim && dim.w > 0) boxH = boxW * (dim.h / dim.w);
                     else boxH = boxW;
                 }
             }
-            var imgEl = document.createElementNS("http://www.w3.org/2000/svg", "image");
-            imgEl.setAttribute("x", x);
-            imgEl.setAttribute("y", y);
-            imgEl.setAttribute("width", boxW);
-            imgEl.setAttribute("height", boxH);
-            imgEl.setAttribute("preserveAspectRatio", "xMidYMid meet");
             var imgUrl = value && typeof value === "string" ? value : "";
-            imgEl.setAttributeNS("http://www.w3.org/1999/xlink", "href", imgUrl);
-            imgEl.setAttribute("href", imgUrl);
-            sectionGroup.appendChild(imgEl);
+            var crop = spec.cropAlpha && this._imageCropAlpha && imgUrl ? this._imageCropAlpha[imgUrl] : null;
+            if (spec.cropAlpha && crop) {
+                var cscale = Math.min(boxW / crop.w, boxH / crop.h);
+                var imgW = crop.natW * cscale;
+                var imgH = crop.natH * cscale;
+                var imgX = -crop.minX * cscale;
+                var imgY = -crop.minY * cscale;
+                var defs = this.svg.querySelector("defs");
+                if (!defs) {
+                    defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+                    this.svg.insertBefore(defs, this.svg.firstChild);
+                }
+                this._clipAlphaId = (this._clipAlphaId || 0) + 1;
+                var clipId = "clipAlpha-" + this._clipAlphaId;
+                var clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+                clipPath.setAttribute("id", clipId);
+                var clipRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                clipRect.setAttribute("x", 0);
+                clipRect.setAttribute("y", 0);
+                clipRect.setAttribute("width", boxW);
+                clipRect.setAttribute("height", boxH);
+                clipPath.appendChild(clipRect);
+                defs.appendChild(clipPath);
+                var grp = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                grp.setAttribute("transform", "translate(" + x + "," + y + ")");
+                grp.setAttribute("clip-path", "url(#" + clipId + ")");
+                var imgEl = document.createElementNS("http://www.w3.org/2000/svg", "image");
+                imgEl.setAttribute("x", imgX);
+                imgEl.setAttribute("y", imgY);
+                imgEl.setAttribute("width", imgW);
+                imgEl.setAttribute("height", imgH);
+                imgEl.setAttribute("preserveAspectRatio", "none");
+                if (spec.invertColors) imgEl.setAttribute("style", "filter: invert(1)");
+                imgEl.setAttributeNS("http://www.w3.org/1999/xlink", "href", imgUrl);
+                imgEl.setAttribute("href", imgUrl);
+                grp.appendChild(imgEl);
+                sectionGroup.appendChild(grp);
+            } else {
+                var imgEl = document.createElementNS("http://www.w3.org/2000/svg", "image");
+                imgEl.setAttribute("x", x);
+                imgEl.setAttribute("y", y);
+                imgEl.setAttribute("width", boxW);
+                imgEl.setAttribute("height", boxH);
+                imgEl.setAttribute("preserveAspectRatio", "xMidYMid meet");
+                if (spec.invertColors) imgEl.setAttribute("style", "filter: invert(1)");
+                imgEl.setAttributeNS("http://www.w3.org/1999/xlink", "href", imgUrl);
+                imgEl.setAttribute("href", imgUrl);
+                sectionGroup.appendChild(imgEl);
+            }
             return { w: boxW, h: boxH };
         }
 
@@ -872,18 +1101,17 @@ class Sleave {
         var fontCss;
         var lineHeight;
         if (spec.shrinkToFit && logicalLines.length === 1) {
-            var sizeKeyOrder = ["large", "medium", "small", "xsmall"];
             var singleLine = logicalLines[0];
-            var startIdx = sizeKeyOrder.indexOf(spec.sizeKey);
-            if (startIdx < 0) startIdx = 0;
-            var chosenKey = sizeKeyOrder[sizeKeyOrder.length - 1];
-            for (var si = startIdx; si < sizeKeyOrder.length; si++) {
-                chosenKey = sizeKeyOrder[si];
-                fontCss = this.getThemeFont(spec.styleKey, spec.italic, chosenKey);
+            var startSizePx = this.getFontSize(spec.sizeKey);
+            var minSizePx = 8;
+            var sizePx = startSizePx;
+            for (; sizePx >= minSizePx; sizePx--) {
+                fontCss = this.getThemeFontWithSize(spec.styleKey, spec.italic, sizePx);
                 var m = this.measureTextSvg(singleLine, fontCss);
                 if (m.width <= contentWidth) break;
             }
-            lineHeight = this.getFontSize(chosenKey) * 1.2;
+            if (sizePx < minSizePx) sizePx = minSizePx;
+            lineHeight = sizePx * 1.2;
             physicalLines = [singleLine];
         } else {
             fontCss = this.getThemeFont(spec.styleKey, spec.italic, spec.sizeKey);
@@ -916,7 +1144,7 @@ class Sleave {
         boxRect.setAttribute("y", y);
         boxRect.setAttribute("width", boxW);
         boxRect.setAttribute("height", boxH);
-        boxRect.setAttribute("fill", "#fff");
+        boxRect.setAttribute("fill", "none");
         var subsectionBordersEl = document.getElementById("subsectionBordersCheckbox");
         var showSubsectionBorders = !subsectionBordersEl || subsectionBordersEl.checked;
         boxRect.setAttribute("stroke", showSubsectionBorders ? "#000" : "none");
@@ -924,6 +1152,7 @@ class Sleave {
 
         var anchor = "start";
         var textX = x + padding;
+        var contentWidthPx = Math.max(0, boxW - padding * 2);
         if (spec.align === "centered") {
             anchor = "middle";
             textX = x + boxW / 2;
@@ -931,15 +1160,82 @@ class Sleave {
             anchor = "end";
             textX = x + boxW - padding;
         }
+        var lineYBase = y + padding + lineHeight / 2;
+        var fillColor = (spec.color != null && spec.color !== "") ? spec.color : "#000";
+        var lineStyle = "font: " + fontCss + "; fill: " + fillColor + (spec.capitalize ? "; text-transform: uppercase" : "");
         for (var k = 0; k < physicalLines.length; k++) {
-            var lineEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            lineEl.setAttribute("x", textX);
-            lineEl.setAttribute("y", y + padding + lineHeight / 2 + k * lineHeight);
-            lineEl.setAttribute("text-anchor", anchor);
-            lineEl.setAttribute("dominant-baseline", "middle");
-            lineEl.setAttribute("style", "font: " + fontCss + "; fill: #000");
-            lineEl.textContent = physicalLines[k];
-            sectionGroup.appendChild(lineEl);
+            var lineText = physicalLines[k];
+            var isLastLine = (k === physicalLines.length - 1);
+            if (spec.align === "justify" && !isLastLine) {
+                var words = lineText.trim().split(/\s+/);
+                if (words.length <= 1) {
+                    var lineEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    lineEl.setAttribute("x", textX);
+                    lineEl.setAttribute("y", lineYBase + k * lineHeight);
+                    lineEl.setAttribute("text-anchor", anchor);
+                    lineEl.setAttribute("dominant-baseline", "middle");
+                    lineEl.setAttribute("style", lineStyle);
+                    lineEl.textContent = lineText;
+                    sectionGroup.appendChild(lineEl);
+                } else {
+                    var wordWidths = [];
+                    var totalWordW = 0;
+                    for (var wi = 0; wi < words.length; wi++) {
+                        var ww = this.measureTextSvg(words[wi], fontCss).width;
+                        wordWidths.push(ww);
+                        totalWordW += ww;
+                    }
+                    var numGaps = words.length - 1;
+                    var spacePerGap = (contentWidthPx - totalWordW) / numGaps;
+                    var lineEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    lineEl.setAttribute("y", lineYBase + k * lineHeight);
+                    lineEl.setAttribute("dominant-baseline", "middle");
+                    lineEl.setAttribute("style", lineStyle);
+                    var leftX = x + padding;
+                    var runX = leftX;
+                    for (var wi = 0; wi < words.length; wi++) {
+                        var tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+                        tspan.setAttribute("x", runX);
+                        tspan.textContent = words[wi];
+                        lineEl.appendChild(tspan);
+                        runX += wordWidths[wi] + spacePerGap;
+                    }
+                    sectionGroup.appendChild(lineEl);
+                }
+            } else {
+                var lineEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                lineEl.setAttribute("x", textX);
+                lineEl.setAttribute("y", lineYBase + k * lineHeight);
+                lineEl.setAttribute("text-anchor", anchor);
+                lineEl.setAttribute("dominant-baseline", "middle");
+                lineEl.setAttribute("style", lineStyle);
+                lineEl.textContent = lineText;
+                sectionGroup.appendChild(lineEl);
+            }
+        }
+        if (spec.doubleUnderline) {
+            var underScale = this.dpi / 25.4;
+            var underThinPx = (this.thinLineThicknessMm != null ? this.thinLineThicknessMm : 0.5) * underScale;
+            var underGapPx = 1 * underScale;
+            var underY0 = y + padding + physicalLines.length * lineHeight + 2;
+            var underY1 = underY0 + underThinPx + underGapPx;
+            var ul0 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            ul0.setAttribute("x1", x);
+            ul0.setAttribute("y1", underY0);
+            ul0.setAttribute("x2", x + boxW);
+            ul0.setAttribute("y2", underY0);
+            var underColor = (spec.color != null && spec.color !== "") ? spec.color : "#000";
+            ul0.setAttribute("stroke", underColor);
+            ul0.setAttribute("stroke-width", underThinPx);
+            sectionGroup.appendChild(ul0);
+            var ul1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            ul1.setAttribute("x1", x);
+            ul1.setAttribute("y1", underY1);
+            ul1.setAttribute("x2", x + boxW);
+            ul1.setAttribute("y2", underY1);
+            ul1.setAttribute("stroke", underColor);
+            ul1.setAttribute("stroke-width", underThinPx);
+            sectionGroup.appendChild(ul1);
         }
         return { w: boxW, h: boxH };
     }

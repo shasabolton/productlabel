@@ -312,7 +312,6 @@
       "features": "Add • Subtract • Multiply • Divide",
       "specs": [
             "Build time: 1–2 hours",
-            "Difficulty: Moderate",
             "Components: Precision laser-cut wood",
             "Tools required: Glue",
             "Age: 8+",
@@ -323,11 +322,10 @@
         "Fully functional arithmetic mechanism",
         "Educational and historically inspired",
         "Smooth mechanical operation",
-        "No electronics required",
-        "Display-worthy finished model"
+        "No electronics required"
        ],
       "qrLabel": "Watch the assembly and demonstration video",
-      "mainImageUrl": "photos/adder/adderhandangle.jpg",
+      "mainImageUrl": "photos/adder/calcInHandNoBackground.png",
       "smallImages": [
         "photos/adder/calcFullExplodeIsoLeft.svg",
         "photos/adder/adderbackFaintBG.jpg",
