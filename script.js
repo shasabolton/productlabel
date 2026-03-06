@@ -204,6 +204,10 @@ document.getElementById("tileSelect").onchange = function(){
   if (activeLabel) setActiveProduct(productSelect.selectedIndex);
 };
 
+document.getElementById("subsectionBordersCheckbox").onchange = function(){
+  if (activeLabel) setActiveProduct(productSelect.selectedIndex);
+};
+
 function setActiveProduct(index){
   activeLabel = products[index];
   try { document.getElementById("canvas").remove(); } catch(e) {}

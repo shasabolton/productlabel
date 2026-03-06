@@ -6,27 +6,30 @@ class Sleave {
       this.labelData.designedBy = "Designed By Shasa Bolton";
       this.boxSize = { width: 310, height: 222, depth: 18 };
       this.sleaveWidth = 95; // mm
-      this.sectionPaddingMm = 5;
+      this.sectionMarginMm = 2;
+      this.lineThicknessMm = 1;
+      this.thinLineThicknessMm = 0.5;
       // Section layout: center (xc,yc) and rotation (0 or 180 deg) per section.
       // Populated by layout(); keys vary by mode (single vs two-column (double) when stack too tall).
       this.sectionLayout = {
         back: { xc: 0, yc: 0, w:0, h:0,  rot: 180, 
             subsections: [
                 ["decorativeFiller-centered"],
-                ["title-large-headings-centered-shrinkFit"],
+                ["title-medium-headings-centered"],
                 ["specs-small-body-left"],
                 ["----------------"],
                 ["longDescription-small-body-justify"],
                 ["----------------"],
                 ["bullets-small-body-left"],
-                ["smallImages[2]-halfWidth", "smallImages[3]-halfWidth"],
-                ["qrLabel-fitWidth","barCode-37.29mm"],
+                ["smallImages[1]-fit", "smallImages[2]-fit"],
+                ["qrLabel-small-body-left-shrinkToFit"],
+                ["qrCode-matchRowHeight","barCode-37.29mmWide"],
                 ["decorativeFiller"]  
             ]
         },
         top: { xc: 0, yc: 0, w:0, h:0, rot: 0, 
             subsections:[
-                ["title-large-headings-centered"]
+                ["title-medium-headings-centered"]
             ]
         },
         front: { xc: 0, yc: 0, w:0, h:0, rot: 0, 
@@ -37,16 +40,16 @@ class Sleave {
                 ["title-large-headings-centered"],
                 ["subtitle-small-body-italic-centered"],
                 ["tagline-small-body-centered"],
-                ["heroImage-fitWidth"],
+                ["heroImage-fit"],
                 ["----------------"],
-                ["smallImage-fitWidth"],
+                ["smallImage-fit"],
                 ["features-small-body-centered"],
                 ["decorativeFiller"],
             ]
         },
         bottom: { xc: 0, yc: 0, w:0, h:0, rot: 0, 
             subsections:[
-                ["logo",["logoText-small-body-centered","designedBy-small-body-centered"]] 
+                ["logo-0.8ParentHeight",["logoText-medium-headings-centered-shrinkToFit","designedBy-small-body-centered"]] 
             ]         
         },
         overlap: { xc: 0, yc: 0, w:0, h:0, rot: 0},
@@ -56,9 +59,9 @@ class Sleave {
  
        this.fontSizes = {
         large: 120,
-        medium: 90,
-        small: 70,
-        xsmall: 60,
+        medium: 80,
+        small: 60,
+        xsmall: 40,
       }
 
     /*   subsectionFomrating={
@@ -89,20 +92,49 @@ class Sleave {
             prop = match[1];
             index = parseInt(match[2], 10);
         }
-        var isImage = /Image|smallImages|barCode|qrLabel/i.test(prop);
+        var isImage = /Image|smallImages|barCode|qrCode/i.test(prop);
         var sizeKey = "small";
         var styleKey = "body";
         var italic = false;
         var align = "left";
+        var heightRatio = null;
+        var widthMm = null;
+        var shrinkToFit = false;
         if (parts.length > 1) {
             var rest = parts.slice(1);
             if (rest[rest.length - 1] === "italic") {
                 italic = true;
                 rest = rest.slice(0, -1);
             }
+            if (rest.indexOf("shrinkToFit") >= 0) {
+                shrinkToFit = true;
+                rest = rest.filter(function(t) { return t !== "shrinkToFit"; });
+            }
+            var matchRowHeight = false;
+            if (rest.indexOf("matchRowHeight") >= 0) {
+                matchRowHeight = true;
+                rest = rest.filter(function(t) { return t !== "matchRowHeight"; });
+            }
+            var fit = false;
+            if (rest.indexOf("fit") >= 0) {
+                fit = true;
+                rest = rest.filter(function(t) { return t !== "fit"; });
+            }
             if (rest.length >= 1 && /^(centered|left|right)$/.test(rest[rest.length - 1])) {
                 align = rest[rest.length - 1];
                 rest = rest.slice(0, -1);
+            }
+            for (var ri = rest.length - 1; ri >= 0; ri--) {
+                var token = rest[ri];
+                var hrMatch = token && token.match(/^(\d+(?:\.\d+)?)ParentHeight$/);
+                var wMatch = token && token.match(/^(\d+(?:\.\d+)?)mmWide$/);
+                if (hrMatch) {
+                    heightRatio = parseFloat(hrMatch[1], 10);
+                    rest = rest.slice(0, ri).concat(rest.slice(ri + 1));
+                } else if (wMatch) {
+                    widthMm = parseFloat(wMatch[1], 10);
+                    rest = rest.slice(0, ri).concat(rest.slice(ri + 1));
+                }
             }
             if (rest.length >= 1 && /^(large|medium|small|xsmall)$/.test(rest[0])) {
                 sizeKey = rest[0];
@@ -111,7 +143,7 @@ class Sleave {
                 styleKey = rest[1];
             }
         }
-        return { prop: prop, index: index, sizeKey: sizeKey, styleKey: styleKey, italic: italic, isImage: isImage, align: align };
+        return { prop: prop, index: index, sizeKey: sizeKey, styleKey: styleKey, italic: italic, isImage: isImage, align: align, heightRatio: heightRatio, widthMm: widthMm, shrinkToFit: shrinkToFit, matchRowHeight: matchRowHeight, fit: fit };
     }
 
     /**
@@ -123,6 +155,15 @@ class Sleave {
         var prop = spec.prop;
         if (prop === "heroImage" && data.mainImageUrl != null) prop = "mainImageUrl";
         if (prop === "smallImage" && Array.isArray(data.smallImages) && data.smallImages[0] != null) return data.smallImages[0];
+        var propLower = prop.toLowerCase();
+        if (propLower === "barcode") {
+            var barVal = data.barCode != null ? data.barCode : data.barcode;
+            if (barVal != null && barVal !== "") return typeof barVal === "string" ? barVal : (barVal.url ? barVal.url : "");
+        }
+        if (propLower === "qrcode") {
+            var qrVal = data.qrCode != null ? data.qrCode : data.qrcode;
+            if (qrVal != null && qrVal !== "") return typeof qrVal === "string" ? qrVal : (qrVal.url ? qrVal.url : "");
+        }
         var val = data[prop];
         if ((prop === "tagline") && (val === undefined || val === null || val === "")) val = data.description;
         if (val === undefined || val === null) return "";
@@ -165,6 +206,170 @@ class Sleave {
         return { width: b.width, height: b.height };
     }
 
+    /**
+     * Wrap text to fit within maxWidth (px). Returns array of lines.
+     */
+    wrapText(text, fontCss, maxWidth) {
+        if (!text || maxWidth <= 0) return [""];
+        var words = String(text).split(/\s+/);
+        if (words.length === 0) return [""];
+        var lines = [];
+        var current = "";
+        for (var i = 0; i < words.length; i++) {
+            var word = words[i];
+            var trial = current ? current + " " + word : word;
+            var w = this.measureTextSvg(trial, fontCss).width;
+            if (w <= maxWidth) {
+                current = trial;
+            } else {
+                if (current) lines.push(current);
+                current = word;
+                if (this.measureTextSvg(word, fontCss).width > maxWidth) {
+                    var chunk = "";
+                    for (var c = 0; c < word.length; c++) {
+                        var next = chunk + word[c];
+                        if (this.measureTextSvg(next, fontCss).width <= maxWidth) chunk = next;
+                        else {
+                            if (chunk) lines.push(chunk);
+                            chunk = word[c];
+                        }
+                    }
+                    current = chunk;
+                }
+            }
+        }
+        if (current) lines.push(current);
+        return lines.length ? lines : [""];
+    }
+
+    /**
+     * Load an image and return its natural dimensions. Used for fixed-width images (e.g. barcode) to get aspect ratio.
+     */
+    loadImageDimensions(url) {
+        if (!url || typeof url !== "string") return Promise.resolve(null);
+        return new Promise(function(resolve) {
+            var img = new Image();
+            img.onload = function() {
+                resolve({ w: img.naturalWidth, h: img.naturalHeight });
+            };
+            img.onerror = function() { resolve(null); };
+            img.crossOrigin = "anonymous";
+            img.src = url;
+        });
+    }
+
+    /**
+     * Collect image URLs that have widthMm but no heightRatio (e.g. barcode) so we can load and cache their dimensions.
+     */
+    collectFixedWidthImageUrls() {
+        var urls = [];
+        var self = this;
+        function add(specStr) {
+            var spec = self.parseSpec(specStr);
+            if (spec.isImage && spec.widthMm != null && spec.heightRatio == null && !spec.matchRowHeight) {
+                var value = self.getSpecValue(spec);
+                if (value && typeof value === "string") urls.push(value);
+            }
+        }
+        function walk(items) {
+            for (var i = 0; i < items.length; i++) {
+                var item = items[i];
+                if (typeof item === "string") add(item);
+                else if (Array.isArray(item)) walk(item);
+            }
+        }
+        var sl = this.sectionLayout;
+        for (var key in sl) {
+            if (!sl[key].subsections) continue;
+            for (var r = 0; r < sl[key].subsections.length; r++) {
+                var row = sl[key].subsections[r];
+                walk(Array.isArray(row) ? row : [row]);
+            }
+        }
+        return urls;
+    }
+
+    /**
+     * Collect image URLs for specs that have "fit" (so we can preload their dimensions for section-fit scaling).
+     */
+    collectFitImageUrls() {
+        var urls = [];
+        var self = this;
+        function add(specStr) {
+            var spec = self.parseSpec(specStr);
+            if (spec.isImage && spec.fit) {
+                var value = self.getSpecValue(spec);
+                if (value && typeof value === "string") urls.push(value);
+            }
+        }
+        function walk(items) {
+            for (var i = 0; i < items.length; i++) {
+                var item = items[i];
+                if (typeof item === "string") add(item);
+                else if (Array.isArray(item)) walk(item);
+            }
+        }
+        var sl = this.sectionLayout;
+        for (var key in sl) {
+            if (!sl[key].subsections) continue;
+            for (var r = 0; r < sl[key].subsections.length; r++) {
+                var row = sl[key].subsections[r];
+                walk(Array.isArray(row) ? row : [row]);
+            }
+        }
+        return urls;
+    }
+
+    /**
+     * Count rows in a section that contain at least one fit image. Used for Stage 2 height reduction.
+     */
+    countFitImageRows(subsections) {
+        var n = 0;
+        for (var r = 0; r < subsections.length; r++) {
+            var row = subsections[r];
+            if (!Array.isArray(row)) row = [row];
+            for (var i = 0; i < row.length; i++) {
+                var item = row[i];
+                if (typeof item === "string") {
+                    var spec = this.parseSpec(item);
+                    if (spec.isImage && spec.fit) { n++; break; }
+                }
+            }
+        }
+        return n;
+    }
+
+    /**
+     * Get natural width and height (px) for a fit image spec. Uses _imageDimensions or 100x100.
+     */
+    getNaturalSizeForFitSpec(spec) {
+        if (!spec || !spec.isImage || !spec.fit) return { w: 100, h: 100 };
+        var value = this.getSpecValue(spec);
+        var url = value && typeof value === "string" ? value : "";
+        var dim = this._imageDimensions && url ? this._imageDimensions[url] : null;
+        if (dim && dim.w > 0 && dim.h > 0) return { w: dim.w, h: dim.h };
+        return { w: 100, h: 100 };
+    }
+
+    /**
+     * Preload dimensions for images that use widthMm without heightRatio (e.g. barcode) and fit images. Fills this._imageDimensions[url].
+     */
+    preloadImageDimensions() {
+        var urls = this.collectFixedWidthImageUrls().concat(this.collectFitImageUrls());
+        var seen = {};
+        var unique = [];
+        for (var u = 0; u < urls.length; u++) {
+            if (!seen[urls[u]]) { seen[urls[u]] = true; unique.push(urls[u]); }
+        }
+        this._imageDimensions = this._imageDimensions || {};
+        var self = this;
+        return Promise.all(unique.map(function(url) {
+            return self.loadImageDimensions(url).then(function(dim) {
+                if (dim) self._imageDimensions[url] = dim;
+            });
+        }));
+    }
+
     render() {
         var pageKey = document.getElementById("pageSizeSelect").value;
         var page = pages[pageKey];
@@ -186,7 +391,10 @@ class Sleave {
         var container = document.querySelector(".canvas-container");
         if (container) container.appendChild(svg);
         else document.body.appendChild(svg);
-        this.layout(pageHeightPx);
+        var self = this;
+        return this.preloadImageDimensions().then(function() {
+            self.layout(pageHeightPx);
+        });
     }
 
     layout(pageHeightPx) {
@@ -347,6 +555,9 @@ class Sleave {
         rect.setAttribute("height", h);
         rect.setAttribute("fill", "none");
         rect.setAttribute("stroke", "#000");
+        var scale = this.dpi / 25.4;
+        var strokePx = (this.lineThicknessMm != null ? this.lineThicknessMm : 0.5) * scale;
+        rect.setAttribute("stroke-width", strokePx);
         g.appendChild(rect);
 
         var titleText = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -359,18 +570,33 @@ class Sleave {
         g.appendChild(titleText);
 
         if (sl.subsections && sl.subsections.length > 0) {
-            var scale = this.dpi / 25.4;
-            var sectionPaddingPx = this.sectionPaddingMm * scale;
-            var contentLeft = -w / 2 + sectionPaddingPx;
-            var contentTop = -h / 2 + sectionPaddingPx;
-            var contentWidth = w - 2 * sectionPaddingPx;
-            var contentHeight = h - 2 * sectionPaddingPx;
+            var sectionMarginPx = this.sectionMarginMm * scale;
+            var contentLeft = -w / 2 + sectionMarginPx;
+            var contentWidth = w - 2 * sectionMarginPx;
+            var contentHeight = h;
             var subsectionPadding = 0;
+            var measureGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            var totalContentHeight = 0;
+            for (var r = 0; r < sl.subsections.length; r++) {
+                var row = sl.subsections[r];
+                if (!Array.isArray(row)) row = [row];
+                var result = this.layoutItems(measureGroup, contentLeft, totalContentHeight, row, contentWidth, contentHeight, subsectionPadding, true, -w / 2, w, 0);
+                if (result && (result.w > 0 || result.h > 0)) {
+                    totalContentHeight += result.h + subsectionPadding;
+                }
+            }
+            if (totalContentHeight > 0) totalContentHeight -= subsectionPadding;
+            var reductionPerRow = 0;
+            if (totalContentHeight > h) {
+                var numFitImageRows = this.countFitImageRows(sl.subsections);
+                if (numFitImageRows > 0) reductionPerRow = (totalContentHeight - h) / numFitImageRows;
+            }
+            var contentTop = reductionPerRow > 0 ? -h / 2 : (-h / 2 + (h - totalContentHeight) / 2);
             var runningY = contentTop;
             for (var r = 0; r < sl.subsections.length; r++) {
                 var row = sl.subsections[r];
                 if (!Array.isArray(row)) row = [row];
-                var result = this.layoutItems(g, contentLeft, runningY, row, contentWidth, contentHeight, subsectionPadding, true);
+                var result = this.layoutItems(g, contentLeft, runningY, row, contentWidth, contentHeight, subsectionPadding, true, -w / 2, w, reductionPerRow);
                 if (result && (result.w > 0 || result.h > 0)) {
                     runningY += result.h + subsectionPadding;
                 }
@@ -381,32 +607,155 @@ class Sleave {
     }
 
     /**
-     * Layout items (spec strings or nested arrays) in one direction; nested arrays use the opposite direction.
-     * Alternates horizontal / vertical / horizontal ... for any depth. Returns { w, h } of the block.
+     * Get the fixed width (px) for an item when in a horizontal row, or null if the item is flexible.
+     * parentIsHorizontal true = item is a vertical stack: it counts as ONE cell; width is max of its rows' widths.
+     * sectionHeight (optional) is used so height-dimensioned cells (e.g. 0.8ParentHeight) get implicit width = height for allocation.
      */
-    layoutItems(sectionGroup, x, y, items, sectionWidth, sectionHeight, padding, isHorizontal) {
+    getFixedWidth(item, parentIsHorizontal, sectionHeight) {
+        var scale = this.dpi / 25.4;
+        if (typeof item === "string") {
+            var spec = this.parseSpec(item);
+            if (spec.widthMm != null) return spec.widthMm * scale;
+            if (spec.heightRatio != null && sectionHeight != null) return sectionHeight * spec.heightRatio;
+            return null;
+        }
+        if (Array.isArray(item)) {
+            if (parentIsHorizontal) {
+                var maxW = 0;
+                var anyNull = false;
+                for (var i = 0; i < item.length; i++) {
+                    var c = this.getFixedWidth(item[i], false, sectionHeight);
+                    if (c == null) anyNull = true;
+                    else if (c > maxW) maxW = c;
+                }
+                return anyNull ? null : maxW;
+            } else {
+                var sum = 0;
+                for (var j = 0; j < item.length; j++) {
+                    var w = this.getFixedWidth(item[j], true, sectionHeight);
+                    if (w == null) return null;
+                    sum += w;
+                }
+                return sum;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Layout items (spec strings or nested arrays) in one direction; nested arrays use the opposite direction.
+     * For horizontal rows: each item (string or vertical array) is ONE cell. Dimensioned cells (mmWide) get their
+     * width first; remaining width is shared equally by flexible cells.
+     */
+    layoutItems(sectionGroup, x, y, items, sectionWidth, sectionHeight, padding, isHorizontal, fullSectionLeft, fullSectionWidth, reductionPerRow) {
         padding = padding != null ? padding : 4;
+        reductionPerRow = reductionPerRow != null ? reductionPerRow : 0;
         var curX = x;
         var curY = y;
         var maxW = 0;
         var maxH = 0;
+        var assignedWidths = [];
+        if (isHorizontal && items.length > 0) {
+            var fixedWidths = [];
+            var sumFixed = 0;
+            var flexCount = 0;
+            for (var i = 0; i < items.length; i++) {
+                var fw = this.getFixedWidth(items[i], true, sectionHeight);
+                fixedWidths.push(fw);
+                if (fw != null) sumFixed += fw;
+                else flexCount++;
+            }
+            var gaps = Math.max(0, items.length - 1) * padding;
+            var remaining = Math.max(0, sectionWidth - sumFixed - gaps);
+            var flexWidth = flexCount > 0 ? remaining / flexCount : 0;
+            for (var a = 0; a < items.length; a++) {
+                assignedWidths.push(fixedWidths[a] != null ? fixedWidths[a] : flexWidth);
+            }
+        }
+        var rowGroups = [];
+        var rowSizes = [];
+        var rowItems = [];
+        var rowCellWidths = [];
+        var rowMatchRowHeight = [];
         for (var i = 0; i < items.length; i++) {
             var item = items[i];
+            var cellWidth = isHorizontal && assignedWidths[i] != null ? assignedWidths[i] : sectionWidth;
+            var cellHeight = sectionHeight;
             var size;
-            if (typeof item === "string") {
-                size = this.drawSubsection(sectionGroup, curX, curY, item, sectionWidth, sectionHeight, padding);
-            } else if (Array.isArray(item)) {
-                size = this.layoutItems(sectionGroup, curX, curY, item, sectionWidth, sectionHeight, padding, !isHorizontal);
-            } else {
-                continue;
-            }
-            if (!size || (size.w === 0 && size.h === 0)) continue;
             if (isHorizontal) {
+                var rowG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                var matchRow = false;
+                if (typeof item === "string") {
+                    var spec = this.parseSpec(item);
+                    matchRow = !!(spec && spec.matchRowHeight);
+                    if (matchRow) cellHeight = 0;
+                    var useFullWidth = !isHorizontal || items.length === 1;
+                    size = this.drawSubsection(rowG, 0, 0, item, cellWidth, cellHeight, padding, useFullWidth, fullSectionLeft, fullSectionWidth, curX, reductionPerRow);
+                } else if (Array.isArray(item)) {
+                    size = this.layoutItems(rowG, 0, 0, item, cellWidth, cellHeight, padding, !isHorizontal, fullSectionLeft, fullSectionWidth, reductionPerRow);
+                } else {
+                    continue;
+                }
+                if (!size || (size.w === 0 && size.h === 0)) continue;
+                sectionGroup.appendChild(rowG);
+                rowGroups.push(rowG);
+                rowSizes.push(size);
+                rowItems.push(item);
+                rowCellWidths.push(cellWidth);
+                rowMatchRowHeight.push(matchRow);
                 curX += size.w + padding;
                 if (size.h > maxH) maxH = size.h;
             } else {
+                if (typeof item === "string") {
+                    var useFullWidth = !isHorizontal || items.length === 1;
+                    size = this.drawSubsection(sectionGroup, curX, curY, item, cellWidth, cellHeight, padding, useFullWidth, fullSectionLeft, fullSectionWidth, 0, reductionPerRow);
+                } else if (Array.isArray(item)) {
+                    size = this.layoutItems(sectionGroup, curX, curY, item, cellWidth, cellHeight, padding, !isHorizontal, fullSectionLeft, fullSectionWidth, reductionPerRow);
+                } else {
+                    continue;
+                }
+                if (!size || (size.w === 0 && size.h === 0)) continue;
                 curY += size.h + padding;
                 if (size.w > maxW) maxW = size.w;
+            }
+        }
+        if (isHorizontal && rowGroups.length > 0) {
+            var rowBox = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            rowBox.setAttribute("x", x);
+            rowBox.setAttribute("y", y);
+            rowBox.setAttribute("width", sectionWidth);
+            rowBox.setAttribute("height", maxH);
+            rowBox.setAttribute("fill", "#fff");
+            var subsectionBordersEl = document.getElementById("subsectionBordersCheckbox");
+            rowBox.setAttribute("stroke", subsectionBordersEl && !subsectionBordersEl.checked ? "none" : "#000");
+            sectionGroup.insertBefore(rowBox, rowGroups[0]);
+            var offsetX = x;
+            for (var ri = 0; ri < rowGroups.length; ri++) {
+                if (rowMatchRowHeight[ri] && maxH > 0) {
+                    var rowG = rowGroups[ri];
+                    var it = rowItems[ri];
+                    var cw = rowCellWidths[ri];
+                    rowG.innerHTML = "";
+                    var newSize;
+                    if (typeof it === "string") {
+                        newSize = this.drawSubsection(rowG, 0, 0, it, cw, maxH, padding, items.length === 1, fullSectionLeft, fullSectionWidth, offsetX, reductionPerRow);
+                    } else {
+                        newSize = this.layoutItems(rowG, 0, 0, it, cw, maxH, padding, false, fullSectionLeft, fullSectionWidth, reductionPerRow);
+                    }
+                    if (newSize) rowSizes[ri] = newSize;
+                }
+                offsetX += rowSizes[ri].w + padding;
+            }
+            var totalContentW = 0;
+            for (var ti = 0; ti < rowGroups.length; ti++) {
+                totalContentW += rowSizes[ti].w;
+                if (ti > 0) totalContentW += padding;
+            }
+            var startX = x + Math.max(0, (sectionWidth - totalContentW) / 2);
+            offsetX = startX;
+            for (var ri = 0; ri < rowGroups.length; ri++) {
+                rowGroups[ri].setAttribute("transform", "translate(" + offsetX + "," + (y + (maxH - rowSizes[ri].h) / 2) + ")");
+                offsetX += rowSizes[ri].w + padding;
             }
         }
         var n = items.length;
@@ -418,9 +767,46 @@ class Sleave {
     /**
      * Draw one subsection as SVG at (x,y) inside sectionGroup. Returns { w, h } of the box drawn.
      */
-    drawSubsection(sectionGroup, x, y, specStr, sectionWidth, sectionHeight, padding) {
+    drawSubsection(sectionGroup, x, y, specStr, sectionWidth, sectionHeight, padding, useFullWidth, fullSectionLeft, fullSectionWidth, sectionOriginX, reductionPerRow) {
         padding = padding != null ? padding : 4;
+        useFullWidth = !!useFullWidth;
+        reductionPerRow = reductionPerRow != null ? reductionPerRow : 0;
+        if (typeof specStr === "string" && /^-{3,}$/.test(specStr)) {
+            var scale = this.dpi / 25.4;
+            var lineThicknessPx = (this.lineThicknessMm != null ? this.lineThicknessMm : 0.5) * scale;
+            var lineY = y + lineThicknessPx / 2;
+            var line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", x);
+            line.setAttribute("y1", lineY);
+            line.setAttribute("x2", x + sectionWidth);
+            line.setAttribute("y2", lineY);
+            line.setAttribute("stroke", "#000");
+            line.setAttribute("stroke-width", lineThicknessPx);
+            sectionGroup.appendChild(line);
+            return { w: sectionWidth, h: lineThicknessPx };
+        }
         var spec = this.parseSpec(specStr);
+        if (spec.prop === "decorativeFiller") {
+            var scale = this.dpi / 25.4;
+            var thinPx = (this.thinLineThicknessMm != null ? this.thinLineThicknessMm : 2) * scale;
+            var spaceMm = 3;
+            var spacePx = spaceMm * scale;
+            var drawW = (this.sleaveWidth != null ? this.sleaveWidth : 95) * scale;
+            var drawX = -drawW / 2 - (sectionOriginX != null ? sectionOriginX : 0);
+            for (var di = 0; di < 2; di++) {
+                var lineY = y + spacePx + thinPx / 2 + di * (thinPx + spacePx);
+                var decoLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                decoLine.setAttribute("x1", drawX);
+                decoLine.setAttribute("y1", lineY);
+                decoLine.setAttribute("x2", drawX + drawW);
+                decoLine.setAttribute("y2", lineY);
+                decoLine.setAttribute("stroke", "#000");
+                decoLine.setAttribute("stroke-width", thinPx);
+                sectionGroup.appendChild(decoLine);
+            }
+            var decoH = spacePx + thinPx + spacePx + thinPx + spacePx;
+            return { w: sectionWidth, h: decoH };
+        }
         var value = this.getSpecValue(spec);
         var boxW = 100;
         var boxH = 100;
@@ -428,46 +814,102 @@ class Sleave {
         var isImage = spec.isImage || (typeof value === "string" && /\.(jpg|jpeg|png|gif|webp|avif)|^(https?:\/\/|photos\/)/i.test(value));
 
         if (isImage) {
-            boxW = 100;
-            boxH = 100;
-            var imgRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-            imgRect.setAttribute("x", x);
-            imgRect.setAttribute("y", y);
-            imgRect.setAttribute("width", boxW);
-            imgRect.setAttribute("height", boxH);
-            imgRect.setAttribute("fill", "#eee");
-            imgRect.setAttribute("stroke", "#000");
-            sectionGroup.appendChild(imgRect);
-            var imgLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            imgLabel.setAttribute("x", x + boxW / 2);
-            imgLabel.setAttribute("y", y + boxH / 2);
-            imgLabel.setAttribute("text-anchor", "middle");
-            imgLabel.setAttribute("dominant-baseline", "middle");
-            imgLabel.setAttribute("style", "font: 10px sans-serif; fill: #333");
-            imgLabel.textContent = "Image";
-            sectionGroup.appendChild(imgLabel);
+            var scale = this.dpi / 25.4;
+            if (spec.fit) {
+                var nat = this.getNaturalSizeForFitSpec(spec);
+                boxW = sectionWidth;
+                boxH = nat.w > 0 ? sectionWidth * (nat.h / nat.w) : sectionWidth;
+                if (reductionPerRow > 0 && boxH > 0) {
+                    boxH = Math.max(0, boxH - reductionPerRow);
+                    boxW = nat.w > 0 ? boxH * (nat.w / nat.h) : boxH;
+                }
+            } else if (spec.widthMm != null) boxW = spec.widthMm * scale;
+            else if (spec.heightRatio != null) boxH = sectionHeight * spec.heightRatio;
+            if (!spec.fit) {
+                if (spec.matchRowHeight && sectionHeight > 0) {
+                    boxH = sectionHeight;
+                    if (spec.widthMm == null) boxW = boxH;
+                } else if (spec.widthMm == null && spec.heightRatio == null) {
+                    boxW = 100;
+                    boxH = 100;
+                } else if (spec.widthMm == null) boxW = boxH;
+                else if (spec.heightRatio == null) {
+                    var imgUrl = value && typeof value === "string" ? value : "";
+                    var dim = this._imageDimensions && imgUrl ? this._imageDimensions[imgUrl] : null;
+                    if (dim && dim.w > 0) boxH = boxW * (dim.h / dim.w);
+                    else boxH = boxW;
+                }
+            }
+            var imgEl = document.createElementNS("http://www.w3.org/2000/svg", "image");
+            imgEl.setAttribute("x", x);
+            imgEl.setAttribute("y", y);
+            imgEl.setAttribute("width", boxW);
+            imgEl.setAttribute("height", boxH);
+            imgEl.setAttribute("preserveAspectRatio", "xMidYMid meet");
+            var imgUrl = value && typeof value === "string" ? value : "";
+            imgEl.setAttributeNS("http://www.w3.org/1999/xlink", "href", imgUrl);
+            imgEl.setAttribute("href", imgUrl);
+            sectionGroup.appendChild(imgEl);
             return { w: boxW, h: boxH };
         }
 
-        var fontCss = this.getThemeFont(spec.styleKey, spec.italic, spec.sizeKey);
-        var lineHeight = this.getFontSize(spec.sizeKey) * 1.2;
-        var lines = [];
+        var scale = this.dpi / 25.4;
+        if (spec.widthMm != null) boxW = spec.widthMm * scale;
+        if (spec.heightRatio != null) boxH = sectionHeight * spec.heightRatio;
+        var contentWidth = Math.max(0, sectionWidth - padding * 2);
+        if (spec.widthMm != null) contentWidth = Math.min(contentWidth, boxW - padding * 2);
+        var logicalLines = [];
         if (Array.isArray(value)) {
             for (var i = 0; i < value.length; i++) {
                 var bulletText = value[i] != null && value[i] !== "" ? String(value[i]) : "";
-                lines.push("• " + bulletText);
+                logicalLines.push("• " + bulletText);
             }
         } else {
             text = value !== "" ? String(value) : specStr;
-            lines = [text];
+            logicalLines = [text];
+        }
+        var physicalLines = [];
+        var fontCss;
+        var lineHeight;
+        if (spec.shrinkToFit && logicalLines.length === 1) {
+            var sizeKeyOrder = ["large", "medium", "small", "xsmall"];
+            var singleLine = logicalLines[0];
+            var startIdx = sizeKeyOrder.indexOf(spec.sizeKey);
+            if (startIdx < 0) startIdx = 0;
+            var chosenKey = sizeKeyOrder[sizeKeyOrder.length - 1];
+            for (var si = startIdx; si < sizeKeyOrder.length; si++) {
+                chosenKey = sizeKeyOrder[si];
+                fontCss = this.getThemeFont(spec.styleKey, spec.italic, chosenKey);
+                var m = this.measureTextSvg(singleLine, fontCss);
+                if (m.width <= contentWidth) break;
+            }
+            lineHeight = this.getFontSize(chosenKey) * 1.2;
+            physicalLines = [singleLine];
+        } else {
+            fontCss = this.getThemeFont(spec.styleKey, spec.italic, spec.sizeKey);
+            lineHeight = this.getFontSize(spec.sizeKey) * 1.2;
+            for (var j = 0; j < logicalLines.length; j++) {
+                var wrapped = this.wrapText(logicalLines[j], fontCss, contentWidth);
+                for (var w = 0; w < wrapped.length; w++) {
+                    physicalLines.push(wrapped[w]);
+                }
+            }
         }
         var maxTw = 0;
-        for (var j = 0; j < lines.length; j++) {
-            var m = this.measureTextSvg(lines[j], fontCss);
+        for (var p = 0; p < physicalLines.length; p++) {
+            var m = this.measureTextSvg(physicalLines[p], fontCss);
             if (m.width > maxTw) maxTw = m.width;
         }
-        boxW = Math.min(maxTw + padding * 2, sectionWidth - padding);
-        boxH = lines.length * lineHeight + padding * 2;
+        if (spec.heightRatio == null) boxH = physicalLines.length * lineHeight + padding * 2;
+        if (useFullWidth && spec.widthMm == null) {
+            boxW = sectionWidth;
+        } else if (spec.widthMm == null) {
+            boxW = Math.min(maxTw + padding * 2, sectionWidth);
+        }
+        if (spec.heightRatio != null && physicalLines.length * lineHeight + padding * 2 > boxH) {
+            var maxLines = Math.max(0, Math.floor((boxH - padding * 2) / lineHeight));
+            physicalLines = physicalLines.slice(0, maxLines);
+        }
 
         var boxRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
         boxRect.setAttribute("x", x);
@@ -475,7 +917,9 @@ class Sleave {
         boxRect.setAttribute("width", boxW);
         boxRect.setAttribute("height", boxH);
         boxRect.setAttribute("fill", "#fff");
-        boxRect.setAttribute("stroke", "#000");
+        var subsectionBordersEl = document.getElementById("subsectionBordersCheckbox");
+        var showSubsectionBorders = !subsectionBordersEl || subsectionBordersEl.checked;
+        boxRect.setAttribute("stroke", showSubsectionBorders ? "#000" : "none");
         sectionGroup.appendChild(boxRect);
 
         var anchor = "start";
@@ -487,14 +931,14 @@ class Sleave {
             anchor = "end";
             textX = x + boxW - padding;
         }
-        for (var k = 0; k < lines.length; k++) {
+        for (var k = 0; k < physicalLines.length; k++) {
             var lineEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
             lineEl.setAttribute("x", textX);
             lineEl.setAttribute("y", y + padding + lineHeight / 2 + k * lineHeight);
             lineEl.setAttribute("text-anchor", anchor);
             lineEl.setAttribute("dominant-baseline", "middle");
             lineEl.setAttribute("style", "font: " + fontCss + "; fill: #000");
-            lineEl.textContent = lines[k];
+            lineEl.textContent = physicalLines[k];
             sectionGroup.appendChild(lineEl);
         }
         return { w: boxW, h: boxH };

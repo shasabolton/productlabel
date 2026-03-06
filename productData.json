@@ -327,16 +327,15 @@
         "Display-worthy finished model"
        ],
       "qrLabel": "Watch the assembly and demonstration video",
-      "mainImageUrl": "photos/adder/calcInHandNoBackground.png",
+      "mainImageUrl": "photos/adder/adderhandangle.jpg",
       "smallImages": [
         "photos/adder/calcFullExplodeIsoLeft.svg",
         "photos/adder/adderbackFaintBG.jpg",
         "photos/adder/adderisoFaintBG.jpg"
       ],
       "qrCode": "photos/adder/calculaterQR.png",
-      "barcode": "photos/adder/calculatorBarcodeEAN.jpeg"
+      "barCode": "photos/adder/calculatorBarcodeEAN.jpeg"
     }
     
   ]
 }
-
