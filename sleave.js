@@ -11,6 +11,7 @@ class Sleave {
       this.rowGapMm = 1;
       this.lineThicknessMm = 0.8;
       this.thinLineThicknessMm = 0.2;
+      this.popSectionWidthMm = 2;
       // Section layout: center (xc,yc) and rotation (0 or 180 deg) per section.
       // Populated by layout(); keys vary by mode (single vs two-column (double) when stack too tall).
       this.sectionLayout = {
@@ -43,7 +44,7 @@ class Sleave {
                 ["title-large-headings-centered-capitalize"],
                 ["subtitle-small-body-italic-centered"],
                 ["tagline-small-body-centered"],
-                ["heroImage-cropAlpha-1.3ParentWidth"],
+                ["heroImage-cropAlpha-popSectionWidth"],
                 ["----------------"],
                 ["smallImage-fit"],
                 ["features-small-body-centered"],
@@ -104,6 +105,7 @@ class Sleave {
         var heightRatio = null;
         var widthMm = null;
         var widthRatio = null;
+        var popSectionWidth = false;
         var shrinkToFit = false;
         if (parts.length > 1) {
             var rest = parts.slice(1);
@@ -152,6 +154,7 @@ class Sleave {
                 var hrMatch = token && token.match(/^(\d+(?:\.\d+)?)ParentHeight$/);
                 var wMatch = token && token.match(/^(\d+(?:\.\d+)?)mmWide$/);
                 var wrMatch = token && token.match(/^(\d+(?:\.\d+)?)ParentWidth$/);
+                var popSectionMatch = token === "popSectionWidth";
                 if (colorMatch) {
                     color = colorMatch[1];
                     rest = rest.slice(0, ri).concat(rest.slice(ri + 1));
@@ -163,6 +166,9 @@ class Sleave {
                     rest = rest.slice(0, ri).concat(rest.slice(ri + 1));
                 } else if (wrMatch) {
                     widthRatio = parseFloat(wrMatch[1], 10);
+                    rest = rest.slice(0, ri).concat(rest.slice(ri + 1));
+                } else if (popSectionMatch) {
+                    popSectionWidth = true;
                     rest = rest.slice(0, ri).concat(rest.slice(ri + 1));
                 }
             }
@@ -177,7 +183,7 @@ class Sleave {
                 styleKey = rest[1];
             }
         }
-        return { prop: prop, index: index, sizeKey: sizeKey, styleKey: styleKey, italic: italic, isImage: isImage, align: align, heightRatio: heightRatio, widthMm: widthMm, widthRatio: widthRatio, shrinkToFit: shrinkToFit, matchRowHeight: matchRowHeight, fit: fit, capitalize: capitalize, doubleUnderline: doubleUnderline, invertColors: invertColors, cropAlpha: cropAlpha, color: color };
+        return { prop: prop, index: index, sizeKey: sizeKey, styleKey: styleKey, italic: italic, isImage: isImage, align: align, heightRatio: heightRatio, widthMm: widthMm, widthRatio: widthRatio, popSectionWidth: popSectionWidth, shrinkToFit: shrinkToFit, matchRowHeight: matchRowHeight, fit: fit, capitalize: capitalize, doubleUnderline: doubleUnderline, invertColors: invertColors, cropAlpha: cropAlpha, color: color };
     }
 
     /**
@@ -354,7 +360,7 @@ class Sleave {
         var self = this;
         function add(specStr) {
             var spec = self.parseSpec(specStr);
-            if (spec.isImage && (spec.widthMm != null || spec.widthRatio != null) && spec.heightRatio == null && !spec.matchRowHeight) {
+            if (spec.isImage && (spec.widthMm != null || spec.widthRatio != null || spec.popSectionWidth) && spec.heightRatio == null && !spec.matchRowHeight) {
                 var value = self.getSpecValue(spec);
                 if (value && typeof value === "string") urls.push(value);
             }
@@ -751,7 +757,7 @@ class Sleave {
             for (var r = 0; r < sl.subsections.length; r++) {
                 var row = sl.subsections[r];
                 if (!Array.isArray(row)) row = [row];
-                var result = this.layoutItems(measureGroup, contentLeft, totalContentHeight + rowPaddingPx, row, contentWidth, contentHeight, subsectionPadding, true, -w / 2, contentWidth, 0);
+                var result = this.layoutItems(measureGroup, contentLeft, totalContentHeight + rowPaddingPx, row, contentWidth, contentHeight, subsectionPadding, true, -w / 2, contentWidth, 0, w);
                 if (result && (result.w > 0 || result.h > 0)) {
                     totalContentHeight += rowPaddingPx + result.h + rowPaddingPx;
                 }
@@ -766,7 +772,7 @@ class Sleave {
             for (var r = 0; r < sl.subsections.length; r++) {
                 var row = sl.subsections[r];
                 if (!Array.isArray(row)) row = [row];
-                var result = this.layoutItems(g, contentLeft, runningY + rowPaddingPx, row, contentWidth, contentHeight, subsectionPadding, true, -w / 2, contentWidth, reductionPerRow);
+                var result = this.layoutItems(g, contentLeft, runningY + rowPaddingPx, row, contentWidth, contentHeight, subsectionPadding, true, -w / 2, contentWidth, reductionPerRow, w);
                 if (result && (result.w > 0 || result.h > 0)) {
                     runningY += rowPaddingPx + result.h + rowPaddingPx;
                 }
@@ -782,12 +788,16 @@ class Sleave {
      * sectionHeight (optional) is used so height-dimensioned cells (e.g. 0.8ParentHeight) get implicit width = height for allocation.
      * sectionWidth (optional) is used for widthRatio (e.g. 0.5ParentWidth).
      */
-    getFixedWidth(item, parentIsHorizontal, sectionHeight, sectionWidth) {
+    getFixedWidth(item, parentIsHorizontal, sectionHeight, sectionWidth, sectionFullWidth) {
         var scale = this.dpi / 25.4;
         if (typeof item === "string") {
             var spec = this.parseSpec(item);
             if (spec.widthMm != null) return spec.widthMm * scale;
             if (spec.widthRatio != null && sectionWidth != null) return sectionWidth * spec.widthRatio;
+            if (spec.popSectionWidth) {
+                var baseW = sectionFullWidth != null ? sectionFullWidth : sectionWidth;
+                if (baseW != null) return baseW + 2 * ((this.popSectionWidthMm != null ? this.popSectionWidthMm : 0) * scale);
+            }
             if (spec.heightRatio != null && sectionHeight != null) return sectionHeight * spec.heightRatio;
             return null;
         }
@@ -796,7 +806,7 @@ class Sleave {
                 var maxW = 0;
                 var anyNull = false;
                 for (var i = 0; i < item.length; i++) {
-                    var c = this.getFixedWidth(item[i], false, sectionHeight, sectionWidth);
+                    var c = this.getFixedWidth(item[i], false, sectionHeight, sectionWidth, sectionFullWidth);
                     if (c == null) anyNull = true;
                     else if (c > maxW) maxW = c;
                 }
@@ -804,7 +814,7 @@ class Sleave {
             } else {
                 var sum = 0;
                 for (var j = 0; j < item.length; j++) {
-                    var w = this.getFixedWidth(item[j], true, sectionHeight, sectionWidth);
+                    var w = this.getFixedWidth(item[j], true, sectionHeight, sectionWidth, sectionFullWidth);
                     if (w == null) return null;
                     sum += w;
                 }
@@ -819,7 +829,7 @@ class Sleave {
      * For horizontal rows: each item (string or vertical array) is ONE cell. Dimensioned cells (mmWide) get their
      * width first; remaining width is shared equally by flexible cells.
      */
-    layoutItems(sectionGroup, x, y, items, sectionWidth, sectionHeight, padding, isHorizontal, fullSectionLeft, fullSectionWidth, reductionPerRow) {
+    layoutItems(sectionGroup, x, y, items, sectionWidth, sectionHeight, padding, isHorizontal, fullSectionLeft, fullSectionWidth, reductionPerRow, sectionFullWidth) {
         padding = padding != null ? padding : 4;
         reductionPerRow = reductionPerRow != null ? reductionPerRow : 0;
         var scale = this.dpi / 25.4;
@@ -834,7 +844,7 @@ class Sleave {
             var sumFixed = 0;
             var flexCount = 0;
             for (var i = 0; i < items.length; i++) {
-                var fw = this.getFixedWidth(items[i], true, sectionHeight, sectionWidth);
+                var fw = this.getFixedWidth(items[i], true, sectionHeight, sectionWidth, sectionFullWidth);
                 fixedWidths.push(fw);
                 if (fw != null) sumFixed += fw;
                 else flexCount++;
@@ -864,9 +874,9 @@ class Sleave {
                     matchRow = !!(spec && spec.matchRowHeight);
                     if (matchRow) cellHeight = 0;
                     var useFullWidth = !isHorizontal || items.length === 1;
-                    size = this.drawSubsection(rowG, 0, 0, item, cellWidth, cellHeight, padding, useFullWidth, fullSectionLeft, fullSectionWidth, curX, reductionPerRow);
+                    size = this.drawSubsection(rowG, 0, 0, item, cellWidth, cellHeight, padding, useFullWidth, fullSectionLeft, fullSectionWidth, curX, reductionPerRow, sectionFullWidth);
                 } else if (Array.isArray(item)) {
-                    size = this.layoutItems(rowG, 0, 0, item, cellWidth, cellHeight, padding, !isHorizontal, fullSectionLeft, fullSectionWidth, reductionPerRow);
+                    size = this.layoutItems(rowG, 0, 0, item, cellWidth, cellHeight, padding, !isHorizontal, fullSectionLeft, fullSectionWidth, reductionPerRow, sectionFullWidth);
                 } else {
                     continue;
                 }
@@ -882,9 +892,9 @@ class Sleave {
             } else {
                 if (typeof item === "string") {
                     var useFullWidth = !isHorizontal || items.length === 1;
-                    size = this.drawSubsection(sectionGroup, curX, curY, item, cellWidth, cellHeight, padding, useFullWidth, fullSectionLeft, fullSectionWidth, 0, reductionPerRow);
+                    size = this.drawSubsection(sectionGroup, curX, curY, item, cellWidth, cellHeight, padding, useFullWidth, fullSectionLeft, fullSectionWidth, 0, reductionPerRow, sectionFullWidth);
                 } else if (Array.isArray(item)) {
-                    size = this.layoutItems(sectionGroup, curX, curY, item, cellWidth, cellHeight, padding, !isHorizontal, fullSectionLeft, fullSectionWidth, reductionPerRow);
+                    size = this.layoutItems(sectionGroup, curX, curY, item, cellWidth, cellHeight, padding, !isHorizontal, fullSectionLeft, fullSectionWidth, reductionPerRow, sectionFullWidth);
                 } else {
                     continue;
                 }
@@ -912,9 +922,9 @@ class Sleave {
                     rowG.innerHTML = "";
                     var newSize;
                     if (typeof it === "string") {
-                        newSize = this.drawSubsection(rowG, 0, 0, it, cw, maxH, padding, items.length === 1, fullSectionLeft, fullSectionWidth, offsetX, reductionPerRow);
+                        newSize = this.drawSubsection(rowG, 0, 0, it, cw, maxH, padding, items.length === 1, fullSectionLeft, fullSectionWidth, offsetX, reductionPerRow, sectionFullWidth);
                     } else {
-                        newSize = this.layoutItems(rowG, 0, 0, it, cw, maxH, padding, false, fullSectionLeft, fullSectionWidth, reductionPerRow);
+                        newSize = this.layoutItems(rowG, 0, 0, it, cw, maxH, padding, false, fullSectionLeft, fullSectionWidth, reductionPerRow, sectionFullWidth);
                     }
                     if (newSize) rowSizes[ri] = newSize;
                 }
@@ -941,7 +951,7 @@ class Sleave {
     /**
      * Draw one subsection as SVG at (x,y) inside sectionGroup. Returns { w, h } of the box drawn.
      */
-    drawSubsection(sectionGroup, x, y, specStr, sectionWidth, sectionHeight, padding, useFullWidth, fullSectionLeft, fullSectionWidth, sectionOriginX, reductionPerRow) {
+    drawSubsection(sectionGroup, x, y, specStr, sectionWidth, sectionHeight, padding, useFullWidth, fullSectionLeft, fullSectionWidth, sectionOriginX, reductionPerRow, sectionFullWidth) {
         padding = padding != null ? padding : 4;
         useFullWidth = !!useFullWidth;
         reductionPerRow = reductionPerRow != null ? reductionPerRow : 0;
@@ -1007,6 +1017,9 @@ class Sleave {
                 }
             } else if (spec.widthMm != null) {
                 boxW = spec.widthMm * scale;
+            } else if (spec.popSectionWidth) {
+                var sectionWidthForPop = sectionFullWidth != null ? sectionFullWidth : parentWidthPx;
+                boxW = sectionWidthForPop + 2 * ((this.popSectionWidthMm != null ? this.popSectionWidthMm : 0) * scale);
             } else if (spec.widthRatio != null) {
                 boxW = parentWidthPx * spec.widthRatio;
             } else if (spec.heightRatio != null) {
@@ -1015,11 +1028,11 @@ class Sleave {
             if (!spec.fit) {
                 if (spec.matchRowHeight && sectionHeight > 0) {
                     boxH = sectionHeight;
-                    if (spec.widthMm == null && spec.widthRatio == null) boxW = boxH;
-                } else if (spec.widthMm == null && spec.widthRatio == null && spec.heightRatio == null) {
+                    if (spec.widthMm == null && spec.widthRatio == null && !spec.popSectionWidth) boxW = boxH;
+                } else if (spec.widthMm == null && spec.widthRatio == null && !spec.popSectionWidth && spec.heightRatio == null) {
                     boxW = 100;
                     boxH = 100;
-                } else if (spec.widthMm == null && spec.widthRatio == null) boxW = boxH;
+                } else if (spec.widthMm == null && spec.widthRatio == null && !spec.popSectionWidth) boxW = boxH;
                 else if (spec.heightRatio == null) {
                     var imgUrl = value && typeof value === "string" ? value : "";
                     var crop = spec.cropAlpha && this._imageCropAlpha && imgUrl ? this._imageCropAlpha[imgUrl] : null;
