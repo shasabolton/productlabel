@@ -82,6 +82,7 @@ function prepareElementForExport() {
 }
 
 function waitForImages(el) {
+  if (!el || !el.querySelectorAll) return Promise.resolve();
   var imgs = el.querySelectorAll("img[src]");
   var pending = [];
   for (var i = 0; i < imgs.length; i++) {
@@ -94,6 +95,29 @@ function waitForImages(el) {
     }
   }
   return pending.length ? Promise.all(pending) : Promise.resolve();
+}
+
+// Render SVG element to a canvas (for PDF/PNG when content is SVG, e.g. Sleave).
+function svgToCanvas(svg) {
+  var w = parseInt(svg.getAttribute("width"), 10) || 300;
+  var h = parseInt(svg.getAttribute("height"), 10) || 300;
+  var clone = svg.cloneNode(true);
+  if (!clone.getAttribute("xmlns")) clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  var str = new XMLSerializer().serializeToString(clone);
+  var dataUrl = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(str)));
+  return new Promise(function (resolve, reject) {
+    var img = new Image();
+    img.onload = function () {
+      var canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      var ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas);
+    };
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
 }
 
 function triggerDownload(dataUrl, filename) {
@@ -114,22 +138,19 @@ function downloadImage(e, format) {
   var ext = format === "png" ? "png" : "jpg";
   var filename = "label." + ext;
   var quality = format === "jpeg" ? 0.92 : undefined;
-  if (el.tagName === "CANVAS") {
-    var dataUrl = quality ? el.toDataURL(mime, quality) : el.toDataURL(mime);
-    triggerDownload(dataUrl, filename);
-    return;
+  function getCanvas() {
+    if (el.tagName === "CANVAS") return Promise.resolve(el);
+    if (el.namespaceURI === "http://www.w3.org/2000/svg" && (el.tagName === "svg" || el.tagName === "SVG")) return svgToCanvas(el);
+    if (typeof html2canvas === "undefined") return Promise.reject(new Error("html2canvas not loaded."));
+    return waitForImages(el).then(function () { return html2canvas(el, { scale: 1, useCORS: true, logging: false }); });
   }
-  if (typeof html2canvas === "undefined") {
-    alert("html2canvas not loaded.");
-    prep.cleanup();
-    return;
-  }
-  waitForImages(el).then(function () {
-    return html2canvas(el, { scale: 1, useCORS: true, logging: false });
-  }).then(function (canvas) {
+  getCanvas().then(function (canvas) {
     var dataUrl = quality ? canvas.toDataURL(mime, quality) : canvas.toDataURL(mime);
     triggerDownload(dataUrl, filename);
-  }).catch(function (err) { console.error(err); }).finally(function () {
+  }).catch(function (err) {
+    console.error(err);
+    alert(err && err.message ? err.message : "Export failed.");
+  }).finally(function () {
     prep.cleanup();
   });
 }
@@ -142,23 +163,70 @@ function downloadPdf(e) {
   var prep = prepareElementForExport();
   if (!prep) return;
   var el = prep.el;
-  if (typeof html2canvas === "undefined" || typeof jspdf === "undefined") {
-    alert("html2canvas or jsPDF not loaded.");
-    prep.cleanup();
-    return;
-  }
   var pageKey = document.getElementById("pageSizeSelect").value;
   var page = pages[pageKey];
   var w = page ? page.width : 297;
   var h = page ? page.height : 210;
-  waitForImages(el).then(function () {
-    return html2canvas(el, { scale: 1, useCORS: true, logging: false });
-  }).then(function (canvas) {
+  var mmToPt = 2.834645669;
+
+  function isSvg(el) {
+    return el && el.namespaceURI === "http://www.w3.org/2000/svg" && (el.tagName === "svg" || el.tagName === "SVG");
+  }
+
+  function tryVectorSvgPdf() {
+    if (typeof jspdf === "undefined" || !jspdf.jsPDF) return Promise.resolve(false);
+    var JsPDF = jspdf.jsPDF;
+    if (typeof JsPDF.prototype.svg !== "function") return Promise.resolve(false);
+    var wPt = w * mmToPt;
+    var hPt = h * mmToPt;
+    var pdf = new JsPDF(wPt > hPt ? "l" : "p", "pt", [wPt, hPt]);
+    return pdf.svg(el, { x: 0, y: 0, width: wPt, height: hPt }).then(function () {
+      pdf.save("label.pdf");
+      return true;
+    }).catch(function () {
+      return false;
+    });
+  }
+
+  function getCanvas() {
+    if (el.tagName === "CANVAS") return Promise.resolve(el);
+    if (isSvg(el)) return svgToCanvas(el);
+    if (typeof html2canvas !== "undefined") return waitForImages(el).then(function () { return html2canvas(el, { scale: 1, useCORS: true, logging: false }); });
+    return Promise.reject(new Error("No way to render element to canvas."));
+  }
+
+  function saveRasterPdf(canvas) {
+    if (typeof jspdf === "undefined" || !jspdf.jsPDF) {
+      triggerDownload(canvas.toDataURL("image/png"), "label.png");
+      alert("PDF library (jsPDF) not loaded. Saved as PNG instead.");
+      return;
+    }
     var imgData = canvas.toDataURL("image/png");
     var pdf = new jspdf.jsPDF({ orientation: w > h ? "landscape" : "portrait", unit: "mm", format: [w, h] });
     pdf.addImage(imgData, "PNG", 0, 0, w, h);
     pdf.save("label.pdf");
-  }).catch(function (err) { console.error(err); }).finally(function () {
+  }
+
+  if (isSvg(el)) {
+    tryVectorSvgPdf().then(function (done) {
+      if (done) return;
+      return getCanvas().then(saveRasterPdf);
+    }).catch(function (err) {
+      console.error(err);
+      return getCanvas().then(saveRasterPdf);
+    }).catch(function (err) {
+      console.error(err);
+      alert("Export failed: " + (err && err.message ? err.message : "could not render to canvas."));
+    }).finally(function () {
+      prep.cleanup();
+    });
+    return;
+  }
+
+  getCanvas().then(saveRasterPdf).catch(function (err) {
+    console.error(err);
+    alert("Export failed: " + (err && err.message ? err.message : "could not render to canvas."));
+  }).finally(function () {
     prep.cleanup();
   });
 }

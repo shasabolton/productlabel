@@ -41,14 +41,14 @@ class Sleave {
                 ["decorativeFiller"],
                 ["eyebrow-medium-body-centered-doubleUnderline"],
 
-                ["title-large-headings-centered-capitalize"],
-                ["subtitle-small-body-italic-centered"],
+                ["title-large-headings-centered-capitalize-paddingBottom0mm"],
+                ["subtitle-small-body-italic-centered-paddingTop0mm"],
                 ["tagline-small-body-centered"],
-                ["heroImage-cropAlpha-popSectionWidth"],
-                ["----------------"],
-                ["smallImage-fit"],
-                ["features-small-body-centered"],
-                ["decorativeFiller"],
+                ["heroImage-cropAlpha-popSectionWidth-paddingBottom0mm"],
+                ["-----------------paddingTop0mm-paddingBottom0mm"],
+                ["smallImage-fit-paddingTop0mm-paddingBottom0mm"],
+                ["features-small-body-centered-paddingBottom0mm"],
+                ["decorativeFiller-paddingTop0mm"],
             ]
         },
         bottom: { xc: 0, yc: 0, w:0, h:0, rot: 0, 
@@ -88,6 +88,18 @@ class Sleave {
      * @returns {{ prop: string, index: number|null, sizeKey: string, styleKey: string|null, italic: boolean, isImage: boolean, align: string }}
      */
     parseSpec(specStr) {
+        if (typeof specStr === "string" && /^-{3,}/.test(specStr)) {
+            var paddingTopMm = null, paddingBottomMm = null;
+            var parts = specStr.split("-");
+            for (var i = 0; i < parts.length; i++) {
+                var token = parts[i];
+                var ptMatch = token && token.match(/^paddingTop(\d+(?:\.\d+)?)mm$/);
+                var pbMatch = token && token.match(/^paddingBottom(\d+(?:\.\d+)?)mm$/);
+                if (ptMatch) paddingTopMm = parseFloat(ptMatch[1], 10);
+                else if (pbMatch) paddingBottomMm = parseFloat(pbMatch[1], 10);
+            }
+            return { prop: "__lineBreak__", index: null, sizeKey: "small", styleKey: "body", italic: false, isImage: false, align: "left", heightRatio: null, widthMm: null, widthRatio: null, paddingTopMm: paddingTopMm, paddingBottomMm: paddingBottomMm, popSectionWidth: false, shrinkToFit: false, matchRowHeight: false, fit: false, capitalize: false, doubleUnderline: false, invertColors: false, cropAlpha: false, color: null };
+        }
         var parts = specStr.split("-");
         var first = parts[0] || "";
         var prop = first;
@@ -105,6 +117,8 @@ class Sleave {
         var heightRatio = null;
         var widthMm = null;
         var widthRatio = null;
+        var paddingTopMm = null;
+        var paddingBottomMm = null;
         var popSectionWidth = false;
         var shrinkToFit = false;
         if (parts.length > 1) {
@@ -170,6 +184,16 @@ class Sleave {
                 } else if (popSectionMatch) {
                     popSectionWidth = true;
                     rest = rest.slice(0, ri).concat(rest.slice(ri + 1));
+                } else {
+                    var ptMatch = token && token.match(/^paddingTop(\d+(?:\.\d+)?)mm$/);
+                    var pbMatch = token && token.match(/^paddingBottom(\d+(?:\.\d+)?)mm$/);
+                    if (ptMatch) {
+                        paddingTopMm = parseFloat(ptMatch[1], 10);
+                        rest = rest.slice(0, ri).concat(rest.slice(ri + 1));
+                    } else if (pbMatch) {
+                        paddingBottomMm = parseFloat(pbMatch[1], 10);
+                        rest = rest.slice(0, ri).concat(rest.slice(ri + 1));
+                    }
                 }
             }
             if (rest.length >= 1 && /^(centered|left|right|justify)$/.test(rest[rest.length - 1])) {
@@ -183,7 +207,7 @@ class Sleave {
                 styleKey = rest[1];
             }
         }
-        return { prop: prop, index: index, sizeKey: sizeKey, styleKey: styleKey, italic: italic, isImage: isImage, align: align, heightRatio: heightRatio, widthMm: widthMm, widthRatio: widthRatio, popSectionWidth: popSectionWidth, shrinkToFit: shrinkToFit, matchRowHeight: matchRowHeight, fit: fit, capitalize: capitalize, doubleUnderline: doubleUnderline, invertColors: invertColors, cropAlpha: cropAlpha, color: color };
+        return { prop: prop, index: index, sizeKey: sizeKey, styleKey: styleKey, italic: italic, isImage: isImage, align: align, heightRatio: heightRatio, widthMm: widthMm, widthRatio: widthRatio, paddingTopMm: paddingTopMm, paddingBottomMm: paddingBottomMm, popSectionWidth: popSectionWidth, shrinkToFit: shrinkToFit, matchRowHeight: matchRowHeight, fit: fit, capitalize: capitalize, doubleUnderline: doubleUnderline, invertColors: invertColors, cropAlpha: cropAlpha, color: color };
     }
 
     /**
@@ -675,7 +699,7 @@ class Sleave {
 
         var scale = this.dpi / 25.4;
         var centerX = this.pageWidthPx / 2;
-        var cutLenPx = 10 * scale;
+        var cutLenPx = 5 * scale;
         var cutThickPx = 0.2 * scale;
         var topCut = document.createElementNS("http://www.w3.org/2000/svg", "line");
         topCut.setAttribute("x1", centerX);
@@ -695,6 +719,32 @@ class Sleave {
         bottomCut.setAttribute("stroke-width", cutThickPx);
         bottomCut.setAttribute("stroke-opacity", "0.5");
         this.svg.appendChild(bottomCut);
+    }
+
+    /**
+     * Get vertical padding (mm) above and below a subsection row. Uses paddingTopMm from the row's first spec
+     * and paddingBottomMm from the row's last spec; default is subsectionRowPaddingMm.
+     */
+    getRowPaddingMm(row) {
+        var defaultMm = this.subsectionRowPaddingMm != null ? this.subsectionRowPaddingMm : 1;
+        function firstSpecStr(r) {
+            if (!Array.isArray(r) || r.length === 0) return null;
+            var first = r[0];
+            return typeof first === "string" ? first : firstSpecStr(first);
+        }
+        function lastSpecStr(r) {
+            if (!Array.isArray(r) || r.length === 0) return null;
+            var last = r[r.length - 1];
+            return typeof last === "string" ? last : lastSpecStr(last);
+        }
+        var firstStr = firstSpecStr(row);
+        var lastStr = lastSpecStr(row);
+        var firstSpec = firstStr ? this.parseSpec(firstStr) : null;
+        var lastSpec = lastStr ? this.parseSpec(lastStr) : null;
+        return {
+            top: (firstSpec && firstSpec.paddingTopMm != null) ? firstSpec.paddingTopMm : defaultMm,
+            bottom: (lastSpec && lastSpec.paddingBottomMm != null) ? lastSpec.paddingBottomMm : defaultMm
+        };
     }
 
     /**
@@ -751,15 +801,17 @@ class Sleave {
             var contentWidth = w - 2 * sectionMarginPx;
             var contentHeight = h;
             var subsectionPadding = 0;
-            var rowPaddingPx = (this.subsectionRowPaddingMm != null ? this.subsectionRowPaddingMm : 1) * scale;
             var measureGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
             var totalContentHeight = 0;
             for (var r = 0; r < sl.subsections.length; r++) {
                 var row = sl.subsections[r];
                 if (!Array.isArray(row)) row = [row];
-                var result = this.layoutItems(measureGroup, contentLeft, totalContentHeight + rowPaddingPx, row, contentWidth, contentHeight, subsectionPadding, true, -w / 2, contentWidth, 0, w);
+                var pad = this.getRowPaddingMm(row);
+                var paddingTopPx = pad.top * scale;
+                var paddingBottomPx = pad.bottom * scale;
+                var result = this.layoutItems(measureGroup, contentLeft, totalContentHeight + paddingTopPx, row, contentWidth, contentHeight, subsectionPadding, true, -w / 2, contentWidth, 0, w);
                 if (result && (result.w > 0 || result.h > 0)) {
-                    totalContentHeight += rowPaddingPx + result.h + rowPaddingPx;
+                    totalContentHeight += paddingTopPx + result.h + paddingBottomPx;
                 }
             }
             var reductionPerRow = 0;
@@ -772,9 +824,12 @@ class Sleave {
             for (var r = 0; r < sl.subsections.length; r++) {
                 var row = sl.subsections[r];
                 if (!Array.isArray(row)) row = [row];
-                var result = this.layoutItems(g, contentLeft, runningY + rowPaddingPx, row, contentWidth, contentHeight, subsectionPadding, true, -w / 2, contentWidth, reductionPerRow, w);
+                var pad = this.getRowPaddingMm(row);
+                var paddingTopPx = pad.top * scale;
+                var paddingBottomPx = pad.bottom * scale;
+                var result = this.layoutItems(g, contentLeft, runningY + paddingTopPx, row, contentWidth, contentHeight, subsectionPadding, true, -w / 2, contentWidth, reductionPerRow, w);
                 if (result && (result.w > 0 || result.h > 0)) {
-                    runningY += rowPaddingPx + result.h + rowPaddingPx;
+                    runningY += paddingTopPx + result.h + paddingBottomPx;
                 }
             }
         }
@@ -955,7 +1010,7 @@ class Sleave {
         padding = padding != null ? padding : 4;
         useFullWidth = !!useFullWidth;
         reductionPerRow = reductionPerRow != null ? reductionPerRow : 0;
-        if (typeof specStr === "string" && /^-{3,}$/.test(specStr)) {
+        if (typeof specStr === "string" && /^-{3,}/.test(specStr)) {
             var scale = this.dpi / 25.4;
             var lineThicknessPx = (this.lineThicknessMm != null ? this.lineThicknessMm : 0.5) * scale;
             var breakPaddingMm = 1;
