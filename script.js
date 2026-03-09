@@ -20,7 +20,8 @@ var pages = {
 var templates = [
   { name: "Product Label", TemplateClass: productLable },
   { name: "Belly Band", TemplateClass: bellyBand },
-  { name: "Sleave", TemplateClass: Sleave }
+  { name: "Sleave", TemplateClass: Sleave },
+  { name: "Two part sticker", TemplateClass: TwoPartSticker }
 ];
 
 

@@ -13,6 +13,7 @@ class Sleave {
       this.thinLineThicknessMm = 0.2;
       this.popSectionWidthMm = 2;
       this.decorativeLineSpacingMm = 1;
+      this.twoPartSticker = !!(data && data.twoPartSticker);
       // Section layout: center (xc,yc) and rotation (0 or 180 deg) per section.
       // Populated by layout(); keys vary by mode (single vs two-column (double) when stack too tall).
       this.sectionLayout = {
@@ -58,9 +59,23 @@ class Sleave {
             ],
             backgroundColor:"black"         
         },
+        topRight: { xc: 0, yc: 0, w:0, h:0, rot: 0, 
+            subsections:[
+                ["title-medium-headings-centered-colorwhite"]
+            ],
+            backgroundColor:"black"
+        },
+        bottomRight: { xc: 0, yc: 0, w:0, h:0, rot: 0, 
+            subsections:[
+                ["logo-0.8ParentHeight-invertColors",["logoText-medium-headings-centered-shrinkToFit-colorwhite","designedBy-small-body-centered-colorwhite"]] 
+            ],
+            backgroundColor:"black"         
+        },
         overlap: { xc: 0, yc: 0, w:0, h:0, rot: 0},
         overlapTop: { xc: 0, yc: 0, w:0, h:0, rot: 0},
-        overlapBottom: { xc: 0, yc: 0, w:0, h:0, rot: 0}
+        overlapBottom: { xc: 0, yc: 0, w:0, h:0, rot: 0},
+        overlapTopRight: { xc: 0, yc: 0, w:0, h:0, rot: 0},
+        overlapBottomRight: { xc: 0, yc: 0, w:0, h:0, rot: 0}
       };
  
        this.fontSizes = {
@@ -645,8 +660,9 @@ class Sleave {
         // which is one front/back section, two spine sections and two overlaps
         var totalLeftH = frontBackH + spineH * 2 + overlapH * 2;
         var yLeft = (this.pageHeightPx - totalLeftH) / 2;
-        // right column only holds the back section; center that separately
-        var yRight = (this.pageHeightPx - frontBackH) / 2;
+        // right column: overlap + top spine + back + bottom spine + overlap (same stack as left)
+        var totalRightH = overlapH * 2 + spineH * 2 + frontBackH;
+        var yRight = (this.pageHeightPx - totalRightH) / 2;
         var y = yLeft; // use y for placing left-column sections
 
         this.sectionLayout.overlapTop.xc = leftXc;
@@ -683,20 +699,57 @@ class Sleave {
         this.sectionLayout.overlapBottom.h = overlapH;
         this.sectionLayout.overlapBottom.rot = 0;
 
-        // place back section centered in right half, aligned vertically with front
+        // right column: overlap, top spine, back, bottom spine, overlap (same stack as left)
+        var yR = yRight;
+        this.sectionLayout.overlapTopRight.xc = rightXc;
+        this.sectionLayout.overlapTopRight.yc = yR + overlapH / 2;
+        this.sectionLayout.overlapTopRight.w = w;
+        this.sectionLayout.overlapTopRight.h = overlapH;
+        this.sectionLayout.overlapTopRight.rot = 0;
+        yR += overlapH;
+
+        this.sectionLayout.topRight.xc = rightXc;
+        this.sectionLayout.topRight.yc = yR + spineH / 2;
+        this.sectionLayout.topRight.w = w;
+        this.sectionLayout.topRight.h = spineH;
+        this.sectionLayout.topRight.rot = 0;
+        yR += spineH;
+
         this.sectionLayout.back.xc = rightXc;
-        // position back vertically centred in its half of the page, not tied to left
-        this.sectionLayout.back.yc = yRight + frontBackH / 2;
+        this.sectionLayout.back.yc = yR + frontBackH / 2;
         this.sectionLayout.back.w = w;
         this.sectionLayout.back.h = frontBackH;
         this.sectionLayout.back.rot = 0; // same orientation as front
+        yR += frontBackH;
+
+        this.sectionLayout.bottomRight.xc = rightXc;
+        this.sectionLayout.bottomRight.yc = yR + spineH / 2;
+        this.sectionLayout.bottomRight.w = w;
+        this.sectionLayout.bottomRight.h = spineH;
+        this.sectionLayout.bottomRight.rot = 0;
+        yR += spineH;
+
+        this.sectionLayout.overlapBottomRight.xc = rightXc;
+        this.sectionLayout.overlapBottomRight.yc = yR + overlapH / 2;
+        this.sectionLayout.overlapBottomRight.w = w;
+        this.sectionLayout.overlapBottomRight.h = overlapH;
+        this.sectionLayout.overlapBottomRight.rot = 0;
+
+        if (this.twoPartSticker) {
+            this.sectionLayout.top.rot = 180;
+            this.sectionLayout.topRight.rot = 180;
+        }
 
         this.drawSection("overlapTop", "Overlap");
         this.drawSection("top", "Top");
         this.drawSection("front", "Front");
         this.drawSection("bottom", "Bottom");
         this.drawSection("overlapBottom", "Overlap");
+        this.drawSection("overlapTopRight", "Overlap");
+        this.drawSection("topRight", "Top");
         this.drawSection("back", "Back");
+        this.drawSection("bottomRight", "Bottom");
+        this.drawSection("overlapBottomRight", "Overlap");
 
         var scale = this.dpi / 25.4;
         var centerX = this.pageWidthPx / 2;
@@ -1298,5 +1351,13 @@ class Sleave {
             sectionGroup.appendChild(ul1);
         }
         return { w: boxW, h: boxH };
+    }
+}
+
+/** Sleave variant for two-part sticker: top sections draw upside down in layoutDouble. */
+class TwoPartSticker extends Sleave {
+    constructor(data) {
+        super(data);
+        this.twoPartSticker = true;
     }
 }
