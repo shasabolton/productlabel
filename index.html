@@ -26,10 +26,10 @@
     <!-- Data sources - referenced by script.js -->
     <link id="productDataSrc" href="productData.json" />
     <link id="themesSrc" href="themes.json" />
-    <!-- html2canvas and jsPDF for div export; svg2pdf for vector SVG in PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/svg2pdf.js@2.7.0/dist/svg2pdf.umd.min.js"></script>
+    <!-- html2canvas, jsPDF, svg2pdf - defer so they load in order before DOMContentLoaded; attachment done in script.js on page load -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/svg2pdf.js@2.7.0/dist/svg2pdf.umd.min.js" defer></script>
     <!-- Template classes (must load before script.js) -->
     <script src="productLabel.js" defer></script>
     <script src="bellyBand.js" defer></script>
@@ -73,9 +73,15 @@
       </div>
       <div class="toolbar-actions">
         <button id="printBtn" type="button">Print</button>
-        <a id="downloadPng" href="#" download="label.png" class="btn-link">Download PNG</a>
-        <a id="downloadJpeg" href="#" download="label.jpg" class="btn-link">Download JPEG</a>
-        <a id="downloadPdf" href="#" class="btn-link">Download PDF</a>
+        <label for="exportFormatSelect">Export:</label>
+        <select id="exportFormatSelect">
+          <option value="jpeg">JPEG</option>
+          <option value="png">PNG</option>
+          <option value="svg">SVG</option>
+          <option value="pdf">PDF</option>
+          <option value="pdfRaster">PDF (raster)</option>
+        </select>
+        <button id="exportBtn" type="button">Download</button>
       </div>
     </header>
     <main class="canvas-container">

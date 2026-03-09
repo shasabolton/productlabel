@@ -12,12 +12,13 @@ class Sleave {
       this.lineThicknessMm = 0.8;
       this.thinLineThicknessMm = 0.2;
       this.popSectionWidthMm = 2;
+      this.decorativeLineSpacingMm = 1;
       // Section layout: center (xc,yc) and rotation (0 or 180 deg) per section.
       // Populated by layout(); keys vary by mode (single vs two-column (double) when stack too tall).
       this.sectionLayout = {
         back: { xc: 0, yc: 0, w:0, h:0,  rot: 180, 
             subsections: [
-                ["decorativeFiller-centered"],
+                ["decorativeFiller-centered-paddingTop0mm-paddingBottom0mm"],
                 ["title-medium-headings-centered"],
                 ["specs-small-body-left"],
                 ["----------------"],
@@ -26,8 +27,8 @@ class Sleave {
                 ["bullets-small-body-left"],
                 ["smallImages[1]-fit", "smallImages[2]-fit"],
                 ["qrLabel-small-body-left-shrinkToFit"],
-                ["qrCode-matchRowHeight","barCode-37.29mmWide"],
-                ["decorativeFiller"]  
+                ["qrCode-matchRowHeight","barCode-47mmWide"],//"barCode-37.29mmWide"],
+                ["decorativeFiller-paddingTop0mm-paddingBottom0mm"]  
             ]
         },
         top: { xc: 0, yc: 0, w:0, h:0, rot: 0, 
@@ -38,17 +39,17 @@ class Sleave {
         },
         front: { xc: 0, yc: 0, w:0, h:0, rot: 0, 
             subsections:[
-                ["decorativeFiller"],
+                ["decorativeFiller-paddingTop0mm-paddingBottom0mm"],
                 ["eyebrow-medium-body-centered-doubleUnderline"],
 
                 ["title-large-headings-centered-capitalize-paddingBottom0mm"],
-                ["subtitle-small-body-italic-centered-paddingTop0mm"],
-                ["tagline-small-body-centered"],
+                ["subtitle-small-body-italic-centered-paddingTop0mm-paddingBottom0mm"],
+                ["tagline-small-body-centered-paddingTop0mm"],
                 ["heroImage-cropAlpha-popSectionWidth-paddingBottom0mm"],
                 ["-----------------paddingTop0mm-paddingBottom0mm"],
                 ["smallImage-fit-paddingTop0mm-paddingBottom0mm"],
                 ["features-small-body-centered-paddingBottom0mm"],
-                ["decorativeFiller-paddingTop0mm"],
+                ["decorativeFiller-paddingTop0mm-paddingBottom0mm"],
             ]
         },
         bottom: { xc: 0, yc: 0, w:0, h:0, rot: 0, 
@@ -750,7 +751,7 @@ class Sleave {
     /**
      * Draw one section as SVG: outline and subsections. Uses sectionLayout center, size (w,h) and rotation.
      * @param {string} key - Section key in sectionLayout (back, top, front, bottom, overlap)
-     * @param {string} title - Label text to draw in the section
+     * @param {string} title - Unused (kept for call-site compatibility)
      */
     drawSection(key, title) {
         var sl = this.sectionLayout[key];
@@ -785,15 +786,6 @@ class Sleave {
         var strokePx = (this.lineThicknessMm != null ? this.lineThicknessMm : 0.5) * scale;
         rect.setAttribute("stroke-width", strokePx);
         g.appendChild(rect);
-
-        var titleText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        titleText.setAttribute("x", 0);
-        titleText.setAttribute("y", 0);
-        titleText.setAttribute("text-anchor", "middle");
-        titleText.setAttribute("dominant-baseline", "middle");
-        titleText.setAttribute("style", "font: 14px sans-serif; fill: #000");
-        titleText.textContent = title;
-        g.appendChild(titleText);
 
         if (sl.subsections && sl.subsections.length > 0) {
             var sectionMarginPx = this.sectionMarginMm * scale;
@@ -1034,7 +1026,7 @@ class Sleave {
             var thinPx = (this.lineThicknessMm != null ? this.lineThicknessMm : 0.5) * scale;
             var spaceMm = 2;
             var spacePx = spaceMm * scale;
-            var gapBetweenMm = 2;
+            var gapBetweenMm = (this.decorativeLineSpacingMm != null ? this.decorativeLineSpacingMm : 2);
             var gapBetweenPx = gapBetweenMm * scale;
             var drawW = (this.sleaveWidth != null ? this.sleaveWidth : 95) * scale;
             var drawX = -drawW / 2 - (sectionOriginX != null ? sectionOriginX : 0);
