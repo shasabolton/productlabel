@@ -21,7 +21,8 @@ var templates = [
   { name: "Product Label", TemplateClass: productLable },
   { name: "Belly Band", TemplateClass: bellyBand },
   { name: "Sleave", TemplateClass: Sleave },
-  { name: "Two part sticker", TemplateClass: TwoPartSticker }
+  { name: "Two part sticker", TemplateClass: TwoPartSticker },
+  { name: "A4 Portrait Sticker", TemplateClass: A4PortraitSticker }
 ];
 
 

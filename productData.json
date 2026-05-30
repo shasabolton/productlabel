@@ -68,11 +68,10 @@
     {
       "title": "Swinging Monkey Kit",
       "description": "Assemble - Hand Crank,watch your monkey swing through the trees",
-      "mainImageUrl": "https://cdn.glitch.global/7fd6a192-1c60-4d81-85d5-3cb9b8f21acc/20240228_170057.jpg?v=1709185025862",
+      "mainImageUrl": "https://i.etsystatic.com/25031074/r/il/5d0025/5850380013/il_1588xN.5850380013_pu5w.jpg",
       "smallImages": [
-        "https://cdn.glitch.global/7fd6a192-1c60-4d81-85d5-3cb9b8f21acc/20240228_170238.jpg?v=1709185057008",
-        "https://cdn.glitch.global/7fd6a192-1c60-4d81-85d5-3cb9b8f21acc/20240228_170308.jpg?v=1709185072552",
-        "https://cdn.glitch.global/7fd6a192-1c60-4d81-85d5-3cb9b8f21acc/20240228_170253.jpg?v=1709185088247"
+        "https://i.etsystatic.com/25031074/r/il/74ad37/5850325771/il_1588xN.5850325771_kd80.jpg",
+        "https://i.etsystatic.com/25031074/r/il/c65b49/5849203955/il_1588xN.5849203955_cgex.jpg"
       ]
     },
     {
@@ -238,6 +237,24 @@
         "photos/magicdrawer/closedLeftIso.webp",
         "photos/magicdrawer/openEmptyLeftIso.webp",
         "photos/magicdrawer/openWithHand.webp"
+      ]
+    },
+    {
+      "title": "Key Through Coin",
+      "description": "Push a wooden key through a wooden coin,DIY Assembly",
+      "mainImageUrl": "https://media.githubusercontent.com/media/shasabolton/images/main/keyThoughCoin/coinEntering.jpg",
+      "smallImages": [
+        "https://media.githubusercontent.com/media/shasabolton/images/main/keyThoughCoin/keyEntering.jpg",
+        "https://media.githubusercontent.com/media/shasabolton/images/main/keyThoughCoin/keyIn.jpg"
+      ]
+    },
+    {
+      "title": "Magic Empty Box",
+      "description": "Make objects appear and vanish, DIY assembly",
+      "mainImageUrl": "https://i.etsystatic.com/25031074/r/il/d8c619/8106028323/il_fullxfull.8106028323_53wl.jpg",
+      "smallImages": [
+        "https://i.etsystatic.com/25031074/r/il/2b63aa/8058119106/il_fullxfull.8058119106_elw4.jpg",
+        "https://i.etsystatic.com/25031074/r/il/b5db82/8106033913/il_fullxfull.8106033913_oc1z.jpg"
       ]
     },
     {
